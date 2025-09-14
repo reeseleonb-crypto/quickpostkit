@@ -10,7 +10,7 @@ STRICT JSON SCHEMA (return ONLY this object, no prose):
       "day": 1,
       "caption": "string, 1–3 sentences, human-sounding, tone-aware",
       "video_idea": "string, 2–6 words",
-      "filming_directions": "string, 3–6 bullets; obey video_comfort; 6–14 words each",
+      "filming_directions": "string, 4–6 bullets; obey video_comfort; 6–14 words each",
       "hook": "string, ≤12 words",
       "cta": "string, ≤12 words, aligned to monthly_goal",
       "hashtags": "string, 5–7 hashtags, space-separated; respect hashtag_style",
