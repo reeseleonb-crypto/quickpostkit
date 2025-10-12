@@ -1,21 +1,25 @@
 import OpenAI from 'openai';
 import { Document, Packer, Paragraph, HeadingLevel, Footer, AlignmentType } from 'docx';
 
-export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 /* ============================= Types ============================= */
+
 type Inputs = {
   niche?: string;
   audience?: string;
   product_or_service?: string;
-  primary_platform?: string; // tiktok | instagram | youtube | linkedin (raw, no normalization)
+  primary_platform?: string; // tiktok | instagram | youtube | linkedin
   tone?: string;
   video_comfort?: string;     // no_talking_head | talking_head | mixed
-  monthly_goal?: string;      // short strings like engagement, sales, bookings, email_signups
-  content_balance?: number | string; // backend expects percent educational (client inverts)
+  monthly_goal?: string;
+  content_balance?: number | string; // percent educational (frontend inverts)
   hashtag_style?: string;
   special_instructions?: string;
   location?: string;
+
+  // backward-compat
+  goal?: string;
 };
 
 type Step = { start_s: number; end_s: number; instruction: string; overlay: string };
@@ -24,7 +28,7 @@ type DayItem = {
   hook: string;
   caption: string;
   video_idea: string;
-  filming_directions: Step[];
+  filming_directions: Step[]; // normalized from either filming_directions or storyboard
   editing_notes: string[];
   cta: string;
   hashtags: string[];
@@ -34,20 +38,8 @@ type DayItem = {
 
 type Plan = { days: DayItem[] };
 
-/* ============================ Minimal Validation ============================ */
-function validateInputs(body: any): { ok: boolean; data: Inputs } {
-  const d: any = body && typeof body === 'object' ? body : {};
-  const keys = [
-    'niche','audience','product_or_service','primary_platform','tone',
-    'video_comfort','monthly_goal','content_balance','hashtag_style',
-    'special_instructions','location'
-  ];
-  const out: any = {};
-  for (const k of keys) out[k] = d[k];
-  return { ok: true, data: out as Inputs };
-}
-
 /* ============================= Prompt ============================= */
+
 function buildPrompt(data: Inputs): string {
   const lines: string[] = [];
   lines.push('ROLE: Return a single compact JSON object only.');
@@ -55,21 +47,37 @@ function buildPrompt(data: Inputs): string {
   lines.push('Use double quotes for all keys and strings. No trailing commas. ASCII only.');
   lines.push('TOP LEVEL: include a property named "days" that is an array with exactly 30 items.');
   lines.push('PER-DAY KEYS (exact): "hook", "caption", "video_idea", "filming_directions", "editing_notes", "cta", "hashtags", "posting_suggestion", "platform_notes".');
-  lines.push('FILMING_DIRECTIONS: array of 5-7 beginner steps. Each has: "start_s" (int), "end_s" (int), "instruction" (plain filming guidance for non-experts), "overlay" (<= 6 words, Title Case). Hook visible by 0-2s. Timestamps ascend. Total 12-20s.');
+  lines.push('FILMING_DIRECTIONS: array of 5-7 beginner steps. Each has: "start_s" (int), "end_s" (int), "instruction" (plain filming guidance: where to stand, what to film, how to move), "overlay" (<= 6 words, Title Case, max 1 emoji).');
+  lines.push('Make steps actionable with simple verbs (stand, hold, move closer, tilt, show result). No jargon.');
+  lines.push('Sprinkle quick checks occasionally (e.g., "Check: Is text readable?").');
+  lines.push('Add safety cues only if obvious (e.g., chemicals -> "(Wear Gloves)").');
+  lines.push('TIMING: steps must ascend; fit typical ranges by platform: TikTok 12-16s, Instagram Reels 8-12s, YouTube Shorts 15-25s, LinkedIn 20-45s. Hook visible by 0-2s.');
   lines.push('EDITING_NOTES: array of 3-5 varied, specific techniques matched to the idea.');
-  lines.push('HASHTAGS: array of 4-6 all-lowercase, niche-aware; avoid generic fillers.');
+  lines.push('HASHTAGS: array of 4-6 all-lowercase, niche-aware; avoid generic fillers (hashes added later).');
   lines.push('CTA: fresh and specific; avoid generic lines.');
   lines.push('POSTING_SUGGESTION: brief timing or packaging tip.');
   lines.push('PLATFORM_NOTES: short note tailored to major platforms when relevant.');
+  lines.push('QUALITY: No cliches, no repetitive phrasing, no filler. Hooks punchy and varied. Captions human and specific.');
+  lines.push('Return JSON only.');
 
+  // Inputs (exact values, empties allowed)
   lines.push('Niche: ' + (data.niche ?? '') + '.');
   lines.push('Audience: ' + (data.audience ?? '') + '.');
   lines.push('Product or service: ' + (data.product_or_service ?? '') + '.');
   lines.push('Primary platform: ' + (data.primary_platform ?? '') + '.');
   lines.push('Tone: ' + (data.tone ?? '') + '.');
   lines.push('Video comfort: ' + (data.video_comfort ?? '') + '.');
-  if (data.content_balance !== undefined && data.content_balance !== null) {
-    lines.push('Content balance target: ' + String(data.content_balance) + ' percent educational across 30 days.');
+if ((data.video_comfort || '') === 'no_talking_head') {
+  lines.push('NO_TALKING_HEAD HARD RULES: Do not show the creator\'s face or body facing the camera. Use hands-only, POV, product-only, or over-shoulder angles.');
+  lines.push('REPLACE any "say/ speak/ selfie/ face the camera/ look at camera" with a non-talking alternative (hands/POV/product).');
+  lines.push('BANNED PHRASES: face the camera; look at the camera; selfie mode; say:; speak to camera; address the viewer.');
+  lines.push('PREFERRED ANGLES: hands-only, POV, product-only, over-shoulder.');
+} else if ((data.video_comfort || '') === 'talking_head') {
+  lines.push('TALKING_HEAD: Include 1–2 short "Say:" lines and head-and-shoulders framing.');
+} else if ((data.video_comfort || '') === 'mixed') {
+  lines.push('MIXED: Include at least one talking line and one text-only/hands-only step.');
+}if (data.content_balance !== undefined && data.content_balance !== null) {
+    lines.push('Content balance target: ' + String(data.content_balance) + ' percent educational; distribute across 30 days.');
   } else {
     lines.push('Content balance target: .');
   }
@@ -78,28 +86,24 @@ function buildPrompt(data: Inputs): string {
   lines.push('Location: ' + (data.location ?? '') + '.');
   lines.push('Special instructions: ' + (data.special_instructions ?? '') + '.');
 
-  lines.push('QUALITY GUARDRAILS: No cliches, no repetitive phrasing, no filler. Hooks must be punchy and varied. Keep captions human and specific. Return JSON only.');
   return lines.join('\n');
 }
 
-/* ============================= Coercion & Repair ============================= */
+/* ============================= Coercion and Repair ============================= */
+
 function coercePlan(raw: any): Plan {
   function normTags(arr: any): string[] {
     const tg = Array.isArray(arr) ? arr : [];
-    const out: string[] = [];
-    for (let i = 0; i < tg.length; i++) {
-      let s = String(tg[i] || '').trim();
-      if (!s) continue;
-      if (s.charAt(0) !== '#') s = '#' + s.replace(/^#+/, '');
-      out.push(s.toLowerCase());
-    }
-    return out;
+    return tg.map((t: any) => {
+      const s = String(t || '').trim();
+      return s.startsWith('#') ? s : ('#' + s.replace(/^#+/, ''));
+    });
   }
   function mapSteps(arr: any): Step[] {
     const sb = Array.isArray(arr) ? arr : [];
     return sb.map((s: any) => ({
-      start_s: Math.max(0, Math.floor(Number((s && s.start_s) || 0))),
-      end_s: Math.max(1, Math.floor(Number((s && s.end_s) || 0))),
+      start_s: Math.floor(Number((s && s.start_s) || 0)),
+      end_s: Math.floor(Number((s && s.end_s) || 0)),
       instruction: String((s && (s.instruction || s.direction || s.step || '')) || ''),
       overlay: String((s && s.overlay) || '')
     }));
@@ -132,10 +136,50 @@ function ensureExactly30(plan: Plan): Plan {
       caption: 'Caption ' + String(i + 1),
       video_idea: 'Idea ' + String(i + 1),
       filming_directions: [
-        { start_s: 0, end_s: 2, instruction: 'Show the subject clearly; steady shot.', overlay: 'Watch This' },
-        { start_s: 2, end_s: 5, instruction: 'Move closer so the subject fills most of the frame.', overlay: 'Detail' },
-        { start_s: 5, end_s: 9, instruction: 'Demonstrate the key action; keep frame simple.', overlay: 'Action' },
-        { start_s: 9, end_s: 12, instruction: 'End on the result; hold for 1 second.', overlay: 'Result' }
+        { start_s: 0, end_s: 2, instruction: 'Stand back 6-8 ft and hold steady. Show the subject clearly.', overlay: 'Watch This' }
+
+/* ===== Comfort Enforcement (no_talking_head auto-repair) ===== */
+function enforceVideoComfort(plan: Plan, videoComfort: string): Plan {
+  if (!plan || !Array.isArray(plan.days)) return plan;
+  const mode = String(videoComfort || '').toLowerCase();
+  if (mode !== 'no_talking_head') return plan;
+
+  const banned = /(face\s+the\s+camera|look\s+at\s+the\s+camera|selfie|selfie\s+mode|say:|speak\s+to\s+camera|address\s+the\s+viewer)/i;
+
+  function rewriteInstruction(ins: string): string {
+    const s = String(ins || '');
+    if (!banned.test(s)) return s;
+    let out = s
+      .replace(/say:.*$/i, '')
+      .replace(/selfie(\s+mode)?/ig, '')
+      .replace(/face\s+the\s+camera/ig, '')
+      .replace(/look\s+at\s+the\s+camera/ig, '')
+      .replace(/speak\s+to\s+camera/ig, '')
+      .replace(/address\s+the\s+viewer/ig, '')
+      .trim();
+    if (!out || out.length < 6) {
+      out = 'Show the action with your hands only from your point-of-view; keep your face off-camera.';
+    } else {
+      out = out + ' (Hands-only POV; keep your face off-camera.)';
+    }
+    return out;
+  }
+
+  const days = plan.days.map((d) => {
+    const steps = Array.isArray(d.filming_directions) ? d.filming_directions : [];
+    const fixed = steps.map((st) => ({
+      start_s: Number(st && st.start_s || 0),
+      end_s: Number(st && st.end_s || 0),
+      instruction: rewriteInstruction(st && st.instruction || ''),
+      overlay: String(st && st.overlay || '')
+    }));
+    return { ...d, filming_directions: fixed };
+  });
+  return { days };
+},
+        { start_s: 2, end_s: 5, instruction: 'Step closer until the subject fills most of the screen. Hold 2s.', overlay: 'Detail' },
+        { start_s: 5, end_s: 9, instruction: 'Show the action with slow, smooth movement. Keep frame simple.', overlay: 'Action' },
+        { start_s: 9, end_s: 12, instruction: 'End on the result. Hold for 1s before cutting.', overlay: 'Result' }
       ],
       editing_notes: ['Tight cuts', 'On-screen text', 'Native captions'],
       cta: 'Try this today and tag us.',
@@ -144,17 +188,36 @@ function ensureExactly30(plan: Plan): Plan {
       platform_notes: 'Add captions on TikTok/Reels.'
     };
   }
+
   const daysIn = Array.isArray(plan.days) ? plan.days.slice(0, 30) : [];
   const days: DayItem[] = [];
-  for (let i = 0; i < 30; i++) days.push(daysIn[i] || fallbackDay(i));
+  for (let i = 0; i < 30; i++) {
+    days.push(daysIn[i] || fallbackDay(i));
+  }
   return { days };
 }
 
 /* ============================= DOCX ============================= */
+
 function buildDocx(plan: Plan, meta: Inputs): Promise<Buffer> {
   function h1(text: string) { return new Paragraph({ text, heading: HeadingLevel.HEADING_1 }); }
   function h2(text: string) { return new Paragraph({ text, heading: HeadingLevel.HEADING_2 }); }
   function p(text: string)  { return new Paragraph({ text }); }
+
+  // Emoji limiter: default 0; allow max 1 per day only if tone contains "witty"
+  const allowOneEmoji = !!(meta && typeof meta.tone === 'string' && /witty/i.test(meta.tone || ''));
+  const emojiRegex = /[\u{1F300}-\u{1FAFF}\u{1F1E6}-\u{1F1FF}]/u;
+  function stripExtraEmojis(s: string, budget: { n: number }): string {
+    let out = '';
+    for (const ch of String(s || '')) {
+      if (emojiRegex.test(ch)) {
+        if (budget.n > 0) { out += ch; budget.n--; }
+      } else {
+        out += ch;
+      }
+    }
+    return out;
+  }
 
   // Cover: content balance display
   let edu = '';
@@ -169,6 +232,8 @@ function buildDocx(plan: Plan, meta: Inputs): Promise<Buffer> {
   }
 
   const children: any[] = [];
+
+  // Cover + inputs
   children.push(new Paragraph({ text: 'QuickPostKit - 30-Day Plan', heading: HeadingLevel.TITLE }));
   children.push(p('Generated: ' + new Date().toISOString().slice(0, 10)));
   children.push(p('----------------------------------------'));
@@ -189,31 +254,38 @@ function buildDocx(plan: Plan, meta: Inputs): Promise<Buffer> {
   children.push(h1('Quick Guide - How To Use This Download'));
   const quickGuide = [
     'Skim Day 1-3 and pick one to film today.',
-    'Follow the Filming Directions step-by-step. Keep each step about 1-3s.',
+    'Follow the Filming Directions step-by-step. Move slowly; keep each step about 1-3s.',
+    'Add short on-screen text (Title Case, <= 6 words). Keep text in top/bottom safe area.',
     'Hook must be visible by 0-2s. Show motion or contrast early.',
     'If you need a trending sound, see Appendix A and pair it after editing.',
     'Aim for 5-7 steps total; hold the final result for 1s.',
     'Post at your audience peak hour. Reply to early comments within 20 minutes.'
   ];
-  for (let i = 0; i < quickGuide.length; i++) { children.push(p('- ' + quickGuide[i])); }
+  for (const s of quickGuide) children.push(p('- ' + s));
   children.push(p(''));
 
   // 30 Days
   for (let i = 0; i < plan.days.length; i++) {
     const d = plan.days[i];
+    const budget = { n: allowOneEmoji ? 1 : 0 };
+    const tags = (Array.isArray(d.hashtags) ? d.hashtags : []).join(' ');
+
     children.push(h1('Day ' + String(i + 1)));
-    children.push(p('Hook: ' + d.hook));
-    children.push(p('Caption: ' + d.caption));
+    children.push(p('Hook: ' + stripExtraEmojis(d.hook, budget)));
+    children.push(p('Caption: ' + stripExtraEmojis(d.caption, budget)));
     children.push(p('Video Idea: ' + d.video_idea));
     children.push(h2('Filming Directions'));
-    for (let k = 0; k < d.filming_directions.length; k++) {
-      const s = d.filming_directions[k];
-      children.push(p('[' + String(s.start_s) + '-' + String(s.end_s) + 's] ' + s.instruction + ' | Overlay: ' + s.overlay));
+
+    const steps = Array.isArray(d.filming_directions) ? d.filming_directions : [];
+    for (const s of steps) {
+      const overlay = s.overlay ? (' | On-screen text: ' + stripExtraEmojis(s.overlay, budget)) : '';
+      children.push(p('[' + String(s.start_s) + '-' + String(s.end_s) + 's] ' + stripExtraEmojis(s.instruction, budget) + overlay));
     }
+
     children.push(h2('Editing Notes'));
-    for (let e = 0; e < d.editing_notes.length; e++) children.push(p('- ' + d.editing_notes[e]));
-    children.push(p('CTA: ' + d.cta));
-    children.push(p('Hashtags: ' + d.hashtags.join(' ')));
+    for (const e of (Array.isArray(d.editing_notes) ? d.editing_notes : [])) children.push(p('- ' + stripExtraEmojis(String(e || ''), budget)));
+    children.push(p('CTA: ' + stripExtraEmojis(d.cta, budget)));
+    children.push(p('Hashtags: ' + tags));
     children.push(p('Posting Suggestion: ' + d.posting_suggestion));
     children.push(p('Platform Notes: ' + d.platform_notes));
     children.push(p(''));
@@ -224,7 +296,7 @@ function buildDocx(plan: Plan, meta: Inputs): Promise<Buffer> {
   children.push(h2('TikTok'));
   for (const s of [
     'Hook by 0-2s with motion or contrast.',
-    '12-16s total; align one text hit to the beat.',
+    '12-16s total; fast beats; align one text hit to the beat.',
     'Use rising sounds in your niche (see Appendix A).',
     'End with a clear action: save, share, comment a keyword.'
   ]) children.push(p('- ' + s));
@@ -250,9 +322,10 @@ function buildDocx(plan: Plan, meta: Inputs): Promise<Buffer> {
     '20-45s explainers; lead with a stat, proof, or mini case.',
     'Subtitles required; many watch muted.',
     'Text above video: 2-line value summary.',
-    'Tag people/companies only when relevant.'
+    'Tag people or companies only when relevant.'
   ]) children.push(p('- ' + s));
 
+  // Extra spacing
   children.push(p(''));
   children.push(p(''));
 
@@ -269,6 +342,7 @@ function buildDocx(plan: Plan, meta: Inputs): Promise<Buffer> {
     'Save good shots to a B-roll library for future edits.'
   ]) children.push(p('- ' + s));
 
+  // Extra spacing
   children.push(p(''));
   children.push(p(''));
 
@@ -285,7 +359,7 @@ function buildDocx(plan: Plan, meta: Inputs): Promise<Buffer> {
   for (const s of [
     'Natural light if possible; face a window.',
     'Alternate distance: full view -> close detail -> action -> reaction.',
-    'One motivated move per step; avoid digital zoom unless experienced.'
+    'One motivated move per step; avoid digital zoom unless you are a photographer.'
   ]) children.push(p('- ' + s));
   children.push(p(''));
   children.push(h2('Editing'));
@@ -295,6 +369,7 @@ function buildDocx(plan: Plan, meta: Inputs): Promise<Buffer> {
     'Align at least one text hit to the beat.'
   ]) children.push(p('- ' + s));
 
+  // Extra spacing
   children.push(p(''));
   children.push(p(''));
 
@@ -313,17 +388,18 @@ function buildDocx(plan: Plan, meta: Inputs): Promise<Buffer> {
     'Testimonial highlight with overlay text.'
   ]) children.push(p('- ' + s));
 
+  // Extra spacing
   children.push(p(''));
   children.push(p(''));
 
-  // Appendix A - Trending Sounds
+  // Appendices A-F
   children.push(h1('Appendix A - How to Find Trending Sounds (Detailed)'));
   children.push(h2('TikTok'));
   for (const s of [
     'Use TikTok Creative Center: Songs -> Rising; set country and niche.',
     'Open a candidate audio; check top recent videos for pacing and caption patterns.',
     'Save 10-20 candidates labeled by vibe (high-energy, calm, storytelling).',
-    'In-app search: niche keyword + sound; prefer steady week-over-week growth.',
+    'In-app search: niche keyword + "sound"; prefer steady week-over-week growth.',
     'Rule of fit: if the first 2s do not support your visual hook, skip it.'
   ]) children.push(p('- ' + s));
   children.push(p(''));
@@ -337,11 +413,68 @@ function buildDocx(plan: Plan, meta: Inputs): Promise<Buffer> {
   children.push(p(''));
   children.push(h2('YouTube Shorts'));
   for (const s of [
-    'Use mobile Sounds picker -> Trending tab; confirm beats align with your step hits.',
+    'Use mobile "Sounds" picker -> Trending tab; confirm beats align with your step hits.',
     'Avoid overused tracks that drown narration; favor percussive cues for text hits.',
     'Check top Shorts using the sound in the last 7 days for format alignment.'
   ]) children.push(p('- ' + s));
 
+  children.push(h1('Appendix B - 10-Beats Script Framework (Expanded)'));
+  for (const s of [
+    'Hook (0-2s): outcome first or bold claim.',
+    'Context: who this is for in 1 line.',
+    'Promise: what they get today.',
+    'Step 1: short command + on-screen label.',
+    'Step 2: show with motion; avoid talking head if not comfortable.',
+    'Step 3: close detail proof or counterexample.',
+    'Proof: stat, time-lapse, or split-screen.',
+    'Objection flip: You think X, but actually...',
+    'Result: show payoff or before/after.',
+    'CTA: one specific action tied to goal.'
+  ]) children.push(p('- ' + s));
+
+  children.push(h1('Appendix C - Filming and Edit Cheats (Expanded)'));
+  for (const s of [
+    'Framing: alternate full view -> close detail -> action -> reaction.',
+    'Movement: 1 motivated move per step (pan, tilt, push-in, handheld).',
+    'Lighting: face a window; avoid mixed color temps.',
+    'Text: 5-7 words per hit; keep in safe zones.',
+    'Rhythm: cut on motion; add 1 beat-synced text hit at hook.',
+    'SFX: one subtle whoosh or pop on payoff; do not spam.'
+  ]) children.push(p('- ' + s));
+
+  children.push(h1('Appendix D - Weekly Batch Plan (Step-by-Step)'));
+  for (const s of [
+    'Mon: collect 10 hooks, 5 sound candidates, 5 proofs.',
+    'Tue: outline 7 filming directions with 5-7 steps each.',
+    'Wed: batch film in 60-90 minutes with fixed lighting.',
+    'Thu: edit all in one block; export 8-16s where possible.',
+    'Fri: schedule posts; prep 3 quick replies to common comments.',
+    'Weekend: engage 20 minutes after posting; save best comments.'
+  ]) children.push(p('- ' + s));
+
+  children.push(h1('Appendix E - Posting Checklist (Detailed)'));
+  for (const s of [
+    'Cover: readable title; contrasty frame.',
+    'Hook: first text hit by 0-2s with motion.',
+    'Length: stay in platform range; do not ramble.',
+    'Captions: 1-2 sentences in natural voice.',
+    'Hashtags: 4-6 niche-aware; mix volumes.',
+    'CTA: 1 specific action; no doubles.',
+    'Pin winners; remix top posts next week.'
+  ]) children.push(p('- ' + s));
+
+  children.push(h1('Appendix F - Filming Quick Guide'));
+  for (const s of [
+    'Start steady. Move slowly. Keep steps 1-3s.',
+    'Alternate distance: full view -> close detail -> action -> reaction.',
+    'Use natural light where possible; face a window.',
+    'Do not pinch to zoom unless you are a photographer; step closer instead.',
+    'Overlay text: Title Case, <= 6 words, max 1 emoji across the whole day.',
+    'Place text in top/bottom safe areas, never over the subject.',
+    'End on the result and hold for 1s.'
+  ]) children.push(p('- ' + s));
+
+  // Footer
   const cSign = String.fromCharCode(0x00A9);
   const footerText = cSign + ' 2025 Fifth Element Labs - Practical AI at the right price';
   const doc = new Document({
@@ -363,110 +496,26 @@ function buildDocx(plan: Plan, meta: Inputs): Promise<Buffer> {
 
 /* ============================= HTTP Handler ============================= */
 
-function comfortIsNoTalkingHead(v: any): boolean {
-  const s = String(v || "").toLowerCase().trim();
-  return s === "no_talking_head" || s === "no-talking-head" || s === "no talking head";
-}
-
-function violatesComfort(stepText: string, comfort: string): boolean {
-  if (!comfortIsNoTalkingHead(comfort)) return false;
-  if (!stepText) return false;
-  const banned = /(face (the )?camera|look(?:ing)? at (?:the )?camera|selfie|address(?: the)? viewer|talk to camera|smile (?:at|to) camera|\b(?:say|speak|tell|ask)\b)/i;
-  return banned.test(stepText);
-}
-
-function rewriteForNoTalkingHead(stepText: string): string {
-  if (!stepText) return stepText;
-  let t = stepText;
-
-  // Replace face-to-camera cues with hands/POV alternatives
-  t = t.replace(/face (the )?camera|look(?:ing)? at (?:the )?camera|selfie|address(?: the)? viewer|talk to camera|smile (?:at|to) camera/gi,
-                "frame hands-only or POV; do not show your face or look into the lens");
-
-  // Replace speaking cues with non-talking direction
-  t = t.replace(/\b(?:say|speak|tell|ask)\b/gi,
-                "convey with on-screen text or demonstrate silently");
-
-  return t;
-}
-
-function sanitizeFilmingSteps(day: DayItem, comfort: string): DayItem {
-  if (!day) return day;
-  if (!Array.isArray(day.filming_directions)) return day;
-
-  const steps = day.filming_directions.map(function (s: any) {
-    const step = s || {};
-    const instr = String(step.instruction || "");
-    if (comfortIsNoTalkingHead(comfort)) {
-      step.instruction = rewriteForNoTalkingHead(instr);
-    }
-    return step;
-  });
-
-  day.filming_directions = steps;
-  return day;
-}
-
-function buildComfortNote(data: Inputs): string {
-  const comfort = String((data as any).video_comfort || "").toLowerCase().trim();
-
-  if (comfortIsNoTalkingHead(comfort)) {
-    return [
-      "COMFORT MODE: NO_TALKING_HEAD.",
-      "Hard rules:",
-      "- Do NOT show the creator's face or body facing the camera.",
-      "- Use hands-only close-ups, POV, over-the-shoulder, or product-only shots.",
-      "- Replace any 'say/speak/tell/ask' or 'look at camera/selfie/address viewers' with silent demonstration or on-screen text.",
-      "Filming directions must respect these rules."
-    ].join("\\n");
-  }
-
-  if (comfort === "talking_head") {
-    return [
-      "COMFORT MODE: TALKING_HEAD.",
-      "Include 1–2 short 'Say:' style lines and at least one head-and-shoulders framing note."
-    ].join("\\n");
-  }
-
-  // mixed / default
-  return [
-    "COMFORT MODE: MIXED.",
-    "Use a blend of hands-only/POV and occasional to-camera lines."
-  ].join("\\n");
-}
-
-function isLowQualityDay(d: DayItem, index1: number, comfort?: string): boolean {
+function isLowQualityDay(d: DayItem, index1: number): boolean {
   if (!d) return true;
   const hook = String(d.hook || "").trim();
   const caption = String(d.caption || "").trim();
   const idea = String(d.video_idea || "").trim();
   const steps = Array.isArray(d.filming_directions) ? d.filming_directions : [];
-
-  // Detect generic/empty
-  const genericHook = /^Hook\\s+\\d+$/i.test(hook) || hook.length < 6;
-  const genericCaption = /^Caption\\s+\\d+$/i.test(caption) || caption.length < 6;
-  const genericIdea = /^(Idea\\s+\\d+|)$/.test(idea);
-  const tooFewSteps = steps.length < 5; // require 5–7 as promised
-  const genericStep = steps.length > 0 && steps.every(function(s: any){
+  // Detect our generic fallback patterns or empties
+  const genericHook = /^Hook\s+\d+$/i.test(hook) || hook.length < 6;
+  const genericCaption = /^Caption\s+\d+$/i.test(caption) || caption.length < 6;
+  const genericIdea = /^(Idea\s+\d+|)$/.test(idea);
+  const tooFewSteps = steps.length < 4;
+  const genericStep = steps.length > 0 && steps.every(function(s){
     var ins = String(s && s.instruction || "").toLowerCase();
     return ins.indexOf("stand back") >= 0 || ins.indexOf("step 1") >= 0;
   });
-
-  // Comfort violation: any step that still contains banned phrasing for no_talking_head
-  let comfortViolation = false;
-  if (comfortIsNoTalkingHead(comfort)) {
-    for (let i = 0; i < steps.length; i++) {
-      const ins = String(steps[i]?.instruction || "");
-      if (violatesComfort(ins, "no_talking_head")) { comfortViolation = true; break; }
-    }
-  }
-
-  return genericHook || genericCaption || genericIdea || tooFewSteps || genericStep || comfortViolation;
+  return genericHook || genericCaption || genericIdea || tooFewSteps || genericStep;
 }
 
 async function generateBatch(client: OpenAI, data: Inputs, startIndex: number, count: number): Promise<Plan> {
   const base = buildPrompt(data);
-  const comfortNote = buildComfortNote(data);
   const startDay = startIndex + 1;
   const endDay = startIndex + count;
   const rangeNote = [
@@ -474,14 +523,14 @@ async function generateBatch(client: OpenAI, data: Inputs, startIndex: number, c
     'Return a single JSON object with a top-level "days" array containing exactly ' + String(count) + ' items.',
     'Each item must correspond to one day in this range, in order.',
     'Do not include any commentary or extra text.'
-  ].join('\\n');
+  ].join('\n');
 
   const completion = await client.chat.completions.create({
     model: 'gpt-4o-mini',
     response_format: { type: 'json_object' },
     messages: [
       { role: 'system', content: 'You are a precise JSON generator. Output beginner filming_directions (5-7 steps), not storyboard. Plain English steps, occasional quick checks, safety cues only if obvious. JSON only.' },
-      { role: 'user', content: base + '\\n' + comfortNote + '\\n' + rangeNote }
+      { role: 'user', content: base + '\n' + rangeNote }
     ],
     temperature: 0.55
   });
@@ -494,8 +543,8 @@ async function generateBatch(client: OpenAI, data: Inputs, startIndex: number, c
 }
 
 async function regenerateOneDay(client: OpenAI, data: Inputs, dayNumber: number): Promise<DayItem | null> {
+  // Ask for exactly one fully-formed day, anchored to the day number
   const base = buildPrompt(data);
-  const comfortNote = buildComfortNote(data);
   const hardNote = [
     'SINGLE DAY REQUEST: Generate exactly 1 item for Day ' + String(dayNumber) + '.',
     'Return JSON with top-level "days": [ { ...exactly one item... } ].',
@@ -503,14 +552,14 @@ async function regenerateOneDay(client: OpenAI, data: Inputs, dayNumber: number)
     'Timing ascends; hook visible by 0-2s; total fits the platform range.',
     'No boilerplate like "Hook ' + String(dayNumber) + '" or "Caption ' + String(dayNumber) + '".',
     'No generic steps like "Stand back / Step 1". Make it niche-aware and specific.'
-  ].join('\\n');
+  ].join('\n');
 
   const completion = await client.chat.completions.create({
     model: 'gpt-4o-mini',
     response_format: { type: 'json_object' },
     messages: [
       { role: 'system', content: 'You are a precise JSON generator. Output beginner filming_directions (5-7 steps). JSON only. No filler.' },
-      { role: 'user', content: base + '\\n' + comfortNote + '\\n' + hardNote }
+      { role: 'user', content: base + '\n' + hardNote }
     ],
     temperature: 0.5
   });
@@ -521,6 +570,8 @@ async function regenerateOneDay(client: OpenAI, data: Inputs, dayNumber: number)
   const d = Array.isArray(plan.days) && plan.days[0] ? plan.days[0] : null;
   if (!d) return null;
 
+  // Basic sanity: at least 4 steps and non-generic hook/caption
+  if (isLowQualityDay(d, dayNumber)) return null;
   return d;
 }
 
@@ -528,7 +579,6 @@ export async function POST(req: Request) {
   try {
     const body = await req.json().catch(function(){ return {}; });
     const data: Inputs = body || {};
-    const comfort = String((data as any).video_comfort || "").toLowerCase().trim();
 
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -544,26 +594,20 @@ export async function POST(req: Request) {
       .concat(batch2.days || [])
       .concat(batch3.days || []);
 
-    // Sanitize for comfort mode (e.g., remove any face-to-camera language)
-    stitched.days = (stitched.days || []).map(function(d){ return sanitizeFilmingSteps(d, comfort); });
-
     // Pad/truncate to exactly 30
     stitched = ensureExactly30(stitched);
 
-    // Targeted regeneration for any low-quality days (comfort-aware; focus on 21–30 first)
+    // Targeted regeneration for any low-quality days (focus on 21–30 first)
     for (let i = 20; i < 30; i++) {
       const dayNumber = i + 1;
-      let d = stitched.days[i];
-      if (isLowQualityDay(d, dayNumber, comfort)) {
+      const d = stitched.days[i];
+      if (isLowQualityDay(d, dayNumber)) {
+        // try up to 2 attempts to regenerate this specific day
         for (let attempt = 0; attempt < 2; attempt++) {
           const fresh = await regenerateOneDay(client, data, dayNumber);
-          if (fresh) {
-            // sanitize and re-check
-            const clean = sanitizeFilmingSteps(fresh, comfort);
-            if (!isLowQualityDay(clean, dayNumber, comfort)) {
-              stitched.days[i] = clean;
-              break;
-            }
+          if (fresh && !isLowQualityDay(fresh, dayNumber)) {
+            stitched.days[i] = fresh;
+            break;
           }
         }
       }
@@ -572,6 +616,7 @@ export async function POST(req: Request) {
     // Final safety
     stitched = ensureExactly30(stitched);
 
+    stitched = enforceVideoComfort(stitched, data.video_comfort || '');
     const buf = await buildDocx(stitched, data);
     const fileName = 'QuickPostKit_' + String(Date.now()) + '.docx';
 

@@ -8,7 +8,7 @@ type FormValues = {
   niche: string;
   audience: string;
   product_or_service: string;
-  location: string; // UI-only addition requested earlier
+  location: string; // NEW: picked up by backend logic
   primary_platform: "tiktok" | "instagram" | "youtube" | "facebook" | "linkedin" | "";
   tone: string; // friendly|bold|witty|minimalist|professional or freeform
   monthly_goal: string; // awareness|engagement|authority|sales or freeform
@@ -24,7 +24,7 @@ export default function GenerateFormPage() {
     niche: "",
     audience: "",
     product_or_service: "",
-    location: "",
+    location: "", // NEW
     primary_platform: "",
     tone: "",
     monthly_goal: "",
@@ -54,7 +54,7 @@ export default function GenerateFormPage() {
     try {
       setErr(null);
 
-      // Minimal required fields (unchanged)
+      // Minimal required fields
       if (!v.niche || !v.audience) {
         setErr("Please fill at least Niche and Audience.");
         return;
@@ -75,7 +75,6 @@ export default function GenerateFormPage() {
 
   return (
     <main className="min-h-screen bg-[radial-gradient(1000px_500px_at_80%_-10%,#1a1d2b_0%,#0b0b12_45%)] text-slate-100">
-      {/* Top bar (visual only) */}
       <header className="border-b border-white/5 sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-black/30">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <a href="/" className="text-lg font-semibold tracking-tight">
@@ -91,14 +90,13 @@ export default function GenerateFormPage() {
         </div>
       </header>
 
-      {/* Intro */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
-        <h1 className="text-3xl sm:text-4xl font-semibold text-white">Generate Your 30-Day Social Content Kit</h1>
+        <h1 className="text-3xl sm:text-4xl font-semibold text-white">Create your 30-day content pack</h1>
         <p className="mt-2 text-slate-300 max-w-3xl">
-          Fill in the details below. When you click Generate, your DOCX will download automatically.
+          Tell us about your business and goals. We’ll assemble 30 days of hooks, captions, filming directions, hashtags, and posting tips.
         </p>
 
-        {/* Stepper (visual) */}
+        {/* Stepper */}
         <ol className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
           {[
             { n: 1, t: "Inputs" },
@@ -113,9 +111,9 @@ export default function GenerateFormPage() {
         </ol>
       </section>
 
-      {/* Form */}
+      {/* FORM */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Left column */}
           <div className="space-y-4">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
@@ -141,7 +139,7 @@ export default function GenerateFormPage() {
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-              <label className="block text-sm font-medium text-slate-200">Product or Service</label>
+              <label className="block text-sm font-medium text-slate-200">Product or service</label>
               <input
                 name="product_or_service"
                 placeholder="e.g., photo packages, weekly mowing, open house tours"
@@ -151,6 +149,7 @@ export default function GenerateFormPage() {
               />
             </div>
 
+            {/* NEW: Location */}
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
               <label className="block text-sm font-medium text-slate-200">Location</label>
               <input
@@ -293,15 +292,6 @@ export default function GenerateFormPage() {
           {err && <p className="text-red-400 text-sm">{err}</p>}
         </div>
       </section>
-
-      {/* Overlay: add third line (UI-only) */}
-      {loading && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/70 text-white space-y-2">
-          <p className="text-lg font-semibold">Preparing your content pack...</p>
-          <p className="text-sm">Status: generating</p>
-          <p className="text-sm text-slate-400">This may take a few minutes, please do not refresh.</p>
-        </div>
-      )}
     </main>
   );
 }

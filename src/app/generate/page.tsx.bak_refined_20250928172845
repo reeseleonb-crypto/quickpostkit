@@ -1,0 +1,165 @@
+﻿export default function Generate() {
+  return (
+    <main className="min-h-screen bg-[radial-gradient(1000px_500px_at_80%_-10%,#1a1d2b_0%,#0b0b12_45%)] text-slate-100">
+      {/* Top nav */}
+      <header className="border-b border-white/5 sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-black/30">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <a href="/" className="text-lg font-semibold tracking-tight">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-500 to-fuchsia-300">Quick</span>
+            <span className="ml-1 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-cyan-200">PostKit</span>
+          </a>
+          <nav className="hidden md:flex gap-6 text-sm text-slate-300">
+            <a href="/#who" className="hover:text-white">Who its for</a>
+            <a href="/#how" className="hover:text-white">How it works</a>
+            <a href="/sample" className="hover:text-white">Sample</a>
+            <a href="/#faq" className="hover:text-white">FAQ</a>
+          </nav>
+        </div>
+      </header>
+
+      {/* Page header */}
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+        <h1 className="text-3xl sm:text-4xl font-semibold text-white">Create your 30-day content pack</h1>
+        <p className="mt-2 text-slate-300 max-w-3xl">
+          Tell us about your business and goals. Well assemble 30 days of hooks, captions, filming directions, hashtags, and posting tips.
+        </p>
+
+        {/* Stepper */}
+        <ol className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {[
+            { n: 1, t: "Inputs" },
+            { n: 2, t: "Pay $5" },
+            { n: 3, t: "Download" },
+          ].map((s, i) => (
+            <li key={i} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white">{s.n}</div>
+              <span className="text-slate-200">{s.t}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* Form */}
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-20">
+        <form id="generate-form" className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Left column */}
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <label htmlFor="niche" className="block text-sm font-medium text-slate-200">Niche</label>
+              <input id="niche" name="niche" placeholder="e.g., home services" className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-fuchsia-400/60" />
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <label htmlFor="audience" className="block text-sm font-medium text-slate-200">Audience</label>
+              <input id="audience" name="audience" placeholder="e.g., local homeowners" className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-fuchsia-400/60" />
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <label htmlFor="productOrService" className="block text-sm font-medium text-slate-200">Product or service</label>
+              <input id="productOrService" name="productOrService" placeholder="e.g., gutter cleaning packages" className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-cyan-400/60" />
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <label htmlFor="notes" className="block text-sm font-medium text-slate-200">Special instructions</label>
+              <textarea id="notes" name="notes" rows={6} placeholder="e.g., no talking heads, before/after preferred, brand rules" className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:border-cyan-400/60"></textarea>
+              <p className="mt-2 text-xs text-slate-400">Add anything we should know. Well reflect this in hooks, filming and captions.</p>
+            </div>
+          </div>
+
+          {/* Right column */}
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <label htmlFor="platform" className="block text-sm font-medium text-slate-200">Primary platform</label>
+              <select id="platform" name="platform" className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm outline-none focus:border-fuchsia-400/60">
+                <option value="">Choose</option>
+                <option>TikTok</option>
+                <option>Instagram Reels</option>
+                <option>YouTube Shorts</option>
+                <option>LinkedIn</option>
+              </select>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <label htmlFor="videoComfort" className="block text-sm font-medium text-slate-200">Video comfort</label>
+              <select id="videoComfort" name="videoComfort" className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm outline-none focus:border-fuchsia-400/60">
+                <option value="">Choose</option>
+                <option>Camera-shy</option>
+                <option>Okay on camera</option>
+                <option>Confident on camera</option>
+              </select>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <label htmlFor="tone" className="block text-sm font-medium text-slate-200">Tone</label>
+              <select id="tone" name="tone" className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm outline-none focus:border-cyan-400/60">
+                <option value="">Choose</option>
+                <option>Educational</option>
+                <option>Friendly</option>
+                <option>Bold</option>
+                <option>Luxury</option>
+                <option>Playful</option>
+              </select>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <label htmlFor="goal" className="block text-sm font-medium text-slate-200">Monthly goal</label>
+              <select id="goal" name="goal" className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm outline-none focus:border-cyan-400/60">
+                <option value="">Choose</option>
+                <option>Leads</option>
+                <option>Followers</option>
+                <option>Bookings</option>
+                <option>Website traffic</option>
+              </select>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <label htmlFor="balance" className="block text-sm font-medium text-slate-200">
+                Content balance <span className="text-slate-400">(0 = educational, 100 = entertaining)</span>
+              </label>
+              <input id="balance" name="balance" type="range" min={0} max={100} defaultValue={50}
+                className="mt-4 w-full accent-fuchsia-500 [accent-color:#ff3df0]" />
+              <div className="mt-2 flex justify-between text-xs text-slate-400">
+                <span>Educational</span><span>Balanced</span><span>Entertaining</span>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <label htmlFor="hashtags" className="block text-sm font-medium text-slate-200">Hashtag style</label>
+              <select id="hashtags" name="hashtags" className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm outline-none focus:border-fuchsia-400/60">
+                <option value="">Choose</option>
+                <option>Local + niche</option>
+                <option>Wide reach</option>
+                <option>Mix</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Full-width actions */}
+          <div className="sm:col-span-2 mt-2 flex flex-wrap items-center gap-3">
+            <button type="submit"
+              className="inline-flex items-center rounded-2xl bg-gradient-to-r from-fuchsia-500 via-orange-500 to-cyan-400 px-5 py-3 text-sm font-semibold text-black shadow-[0_8px_40px_-12px_rgba(255,61,240,.6)] [background-size:200%_100%] hover:[background-position:100%_0] active:scale-[.98]">
+              Pay $5 & Generate
+            </button>
+            <a href="/sample" className="inline-flex items-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:border-white/30">
+              See a 5-day sample
+            </a>
+          </div>
+        </form>
+
+        {/* Trust badges / notes */}
+        <div className="sm:col-span-2 mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {[
+            { t: "One-time $5", d: "No subscriptions or upsells." },
+            { t: "Fast", d: "Most kits are ready in ~60 seconds." },
+            { t: "Downloadable", d: ".docx file with filming notes & checklists." },
+          ].map((c, i) => (
+            <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <h3 className="font-semibold text-white">{c.t}</h3>
+              <p className="mt-1 text-sm text-slate-300">{c.d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </main>
+  );
+}

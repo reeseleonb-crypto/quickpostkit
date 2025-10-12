@@ -76,7 +76,7 @@ export default function Home() {
           <div className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-3">
             {[
               { title: "Practical & Affordable", body: "$5 once. Thats it." },
-              { title: "Tailored by 11 inputs", body: "Niche, audience, tone, platform, and more." },
+              { title: "Tailored by 10 Inputs", body: "Niche, audience, tone, platform, and more." },
               { title: "Word Doc Download", body: "30 days with filming notes and checklists." },
             ].map((c, i) => (
               <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,.04)] transition hover:shadow-[0_0_40px_rgba(255,61,240,.15)]">
@@ -130,7 +130,7 @@ export default function Home() {
           <h2 className="text-2xl sm:text-3xl font-semibold text-white">How it works</h2>
           <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-4">
             {[
-              { n: 1, t: "Fill the 11-input form", d: "Tell us niche, audience, product or service, location, primary platform, tone, monthly goal, video style, content balance, hashtag style, and special instructions." },
+              { n: 1, t: "Fill the 10-input form", d: "Tell us niche, audience, platform, tone, goals." },
               { n: 2, t: "Pay $5 via Stripe", d: "One-time payment. No logins. No subscriptions." },
               { n: 3, t: "We assemble your kit", d: "Unique, non-cliché content plan generated fast." },
               { n: 4, t: "Auto-download .docx", d: "A polished Word doc with all 30 days." },
@@ -259,8 +259,6 @@ export default function Home() {
     </div>
   );
 }
-
-
 
 
 

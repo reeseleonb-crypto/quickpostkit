@@ -1,0 +1,125 @@
+﻿export const metadata = {
+  title: "Contact Support — QuickPostKit",
+  description: "Need help with your order or have questions before you buy? Contact QuickPostKit support.",
+  openGraph: {
+    title: "Contact Support — QuickPostKit",
+    description: "Need help with your order or have questions before you buy? Contact QuickPostKit support.",
+    url: "https://quickpostkit.com/contact",
+    siteName: "QuickPostKit",
+    type: "website"
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Contact Support — QuickPostKit",
+    description: "Need help with your order or have questions before you buy? Contact QuickPostKit support."
+  }
+};
+export default function Contact() {
+  return (
+    <main className="min-h-screen bg-[radial-gradient(1000px_500px_at_80%_-10%,#1a1d2b_0%,#0b0b12_45%)] text-slate-100">
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+        {/* Heading + intro */}
+        <h1 className="text-3xl sm:text-4xl font-semibold text-white">Contact</h1>
+        <p className="mt-2 text-slate-300 max-w-2xl">
+          Need help with your order or a question before you buy? We’re here to help.
+        </p>
+
+        {/* Support Card */}
+        <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <p className="text-sm uppercase tracking-wide text-slate-400">Support</p>
+              <a
+                href="mailto:support@fifthelementlabs.com"
+                className="mt-1 inline-flex items-center gap-2 text-base font-medium text-white hover:text-fuchsia-300"
+              >
+                support@fifthelementlabs.com
+              </a>
+              <p className="mt-2 text-sm text-slate-400">
+                Typical reply time: <span className="text-slate-200">within 24 hours</span> (Mon–Fri).
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="/sample"
+                className="inline-flex items-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:border-white/30"
+              >
+                See a Sample
+              </a>
+              <a
+                href="/generate"
+                className="inline-flex items-center rounded-2xl bg-gradient-to-r from-fuchsia-500 via-orange-500 to-cyan-400 px-4 py-2 text-sm font-semibold text-black shadow-[0_8px_40px_-12px_rgba(255,61,240,.6)] [background-size:200%_100%] hover:[background-position:100%_0] active:scale-[.98]"
+              >
+                Get Your Kit
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Descriptive sections */}
+        <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <h2 className="text-lg font-semibold text-white">Order issues</h2>
+            <p className="mt-2 text-slate-300">
+              Didn’t receive your download, or something looks off in your kit? Email us with your order email and we’ll resend or correct it.
+            </p>
+            <ul className="mt-3 list-disc pl-5 text-sm text-slate-300 space-y-1">
+              <li>Missing download link or file</li>
+              <li>File won’t open or looks corrupted</li>
+              <li>Content doesn’t match your inputs</li>
+            </ul>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <h2 className="text-lg font-semibold text-white">Refunds</h2>
+            <p className="mt-2 text-slate-300">
+              If we can’t deliver a working kit for your inputs, we’ll make it right or refund your $5. For most issues we can fix and resend within one business day.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <h2 className="text-lg font-semibold text-white">Privacy</h2>
+            <p className="mt-2 text-slate-300">
+              We store only what’s needed to process your order and assemble your document: your 10–11 inputs and basic order metadata. No subscriptions, no resale of your data, no ads.
+            </p>
+            <p className="mt-2 text-slate-300">
+              You can request deletion of your form data any time by emailing support.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <h2 className="text-lg font-semibold text-white">Terms</h2>
+            <p className="mt-2 text-slate-300">
+              Your purchase is a <span className="text-slate-200">one-time license</span> for your own use. No reselling or redistribution of the kit or its contents.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <h2 className="text-lg font-semibold text-white">Disclaimer</h2>
+            <p className="mt-2 text-slate-300">
+              Results vary based on your inputs, niche, and platform changes. We provide guidance and structure; you own publishing and compliance on your accounts.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <h2 className="text-lg font-semibold text-white">Partnerships &amp; Press</h2>
+            <p className="mt-2 text-slate-300">
+              Interested in collaborating, bundling, or covering QuickPostKit? Email{" "}
+              <a href="mailto:support@fifthelementlabs.com" className="underline hover:text-fuchsia-300">
+                support@fifthelementlabs.com
+              </a>{" "}
+              with “Partnership” or “Press” in the subject.
+            </p>
+          </div>
+        </div>
+
+        {/* Footnote */}
+        <p className="mt-10 text-sm text-slate-400">
+          Full policies available on request. This page summarizes key points for clarity.
+        </p>
+      </section>
+    </main>
+  );
+}
+

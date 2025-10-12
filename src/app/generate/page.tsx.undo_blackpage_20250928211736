@@ -1,0 +1,23 @@
+﻿"use client";
+
+import { useState } from "react";
+import { saveQpkForm } from "@/lib/qpkFormPersist";
+
+export default function GenerateFormPage() {
+  const [loading, setLoading] = useState(false);
+
+  return (
+    <main className="min-h-screen bg-[radial-gradient(1000px_500px_at_80%_-10%,#1a1d2b_0%,#0b0b12_45%)] text-slate-100">
+      {/* Overlay example */}
+      {loading && (
+        <div className="fixed inset-0 flex flex-col items-center justify-center bg-black/70 text-white space-y-2">
+          <p className="text-lg font-semibold">Preparing your content pack...</p>
+          <p className="text-sm">Status: generating</p>
+          <p className="text-sm text-slate-400">This may take a few minutes, please do not refresh.</p>
+        </div>
+      )}
+
+      {/* ...the rest of your form + UI stays untouched... */}
+    </main>
+  );
+}

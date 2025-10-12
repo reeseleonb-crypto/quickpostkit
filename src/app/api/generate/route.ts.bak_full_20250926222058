@@ -1,0 +1,678 @@
+import OpenAI from 'openai';
+import { Document, Packer, Paragraph, HeadingLevel, Footer, AlignmentType } from 'docx';
+
+/* ============================= Types ============================= */
+
+export const dynamic = 'force-dynamic';
+
+type Inputs = {
+  niche?: string;
+  audience?: string;
+  product_or_service?: string;
+  primary_platform?: string; // tiktok | instagram | youtube | linkedin (raw, no normalization)
+  tone?: string;
+  video_comfort?: string;
+  monthly_goal?: string;     // short strings like engagement, sales, bookings, email_signups
+  content_balance?: number | string; // backend expects percent educational (client inverts)
+  hashtag_style?: string;
+  special_instructions?: string;
+  location?: string;
+
+  // backward-compat only
+  goal?: string;
+};
+
+type DayItem = {
+  hook: string;
+  caption: string;
+  video_idea: string;
+  storyboard: Array<{ start_s: number; end_s: number; instruction: string; overlay: string }>;
+  editing_notes: string[];
+  cta: string;
+  hashtags: string[];
+  posting_suggestion: string;
+  platform_notes: string;
+};
+
+type Plan = { days: DayItem[] };
+
+/* ============================= Prompt ============================= */
+
+function buildPrompt(data: Inputs): string {
+  const lines: string[] = [];
+  lines.push('ROLE: Return a single compact JSON object only.');
+  lines.push('No markdown, no code fences, no commentary.');
+  lines.push('Use double quotes for all keys and strings. No trailing commas. ASCII only.');
+  lines.push('TOP LEVEL: include a property named "days" that is an array with exactly 30 items.');
+  lines.push('PER-DAY KEYS (exact): "hook", "caption", "video_idea", "storyboard", "editing_notes", "cta", "hashtags", "posting_suggestion", "platform_notes".');
+  lines.push('STORYBOARD: array of 4-6 objects. Each object has: "start_s" (integer), "end_s" (integer), "instruction" (precise filmable shot: subject + camera move/lens + action), "overlay" (<= 6 words).');
+  lines.push('Timestamps must ascend and fit within 12-20 total seconds.');
+  lines.push('EDITING_NOTES: array of 3-5 varied, specific techniques matched to the idea.');
+  lines.push('HASHTAGS: array of 4-6 all-lowercase, niche-aware; avoid generic fillers.');
+  lines.push('CTA: fresh and specific; avoid generic lines.');
+  lines.push('POSTING_SUGGESTION: brief timing/packaging tip.');
+  lines.push('PLATFORM_NOTES: short note tailored to major platforms when relevant.');
+
+  // Inputs (exact values, empties allowed)
+  lines.push('Niche: ' + (data.niche ?? '') + '.');
+  lines.push('Audience: ' + (data.audience ?? '') + '.');
+  lines.push('Product or service: ' + (data.product_or_service ?? '') + '.');
+  lines.push('Primary platform: ' + (data.primary_platform ?? '') + '.');
+  lines.push('Tone: ' + (data.tone ?? '') + '.');
+  lines.push('Video comfort: ' + (data.video_comfort ?? '') + '.');
+  if (data.content_balance !== undefined && data.content_balance !== null) {
+    // Backend still expects percent educational (client inverts now)
+    lines.push('Content balance target: ' + String(data.content_balance) + ' percent educational; distribute across 30 days.');
+  } else {
+    lines.push('Content balance target: .');
+  }
+  lines.push('Monthly goal: ' + (data.monthly_goal ?? '') + '.');
+  lines.push('Hashtag style: ' + (data.hashtag_style ?? '') + '.');
+  lines.push('Location: ' + (data.location ?? '') + '.');
+  lines.push('Special instructions: ' + (data.special_instructions ?? '') + '.');
+
+  lines.push('QUALITY GUARDRAILS: No cliches, no repetitive phrasing, no filler. Hooks must be punchy and varied.');
+  lines.push('Keep captions human and specific, not generic.');
+  lines.push('Return JSON only.');
+  return lines.join('\n');
+}
+
+/* ============================= Coercion ============================= */
+
+function coercePlan(raw: any): Plan {
+  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.days)) return { days: [] };
+  const out: DayItem[] = [];
+  for (let i = 0; i < raw.days.length; i++) {
+    const d = raw.days[i] || {};
+    const sb = Array.isArray(d.storyboard) ? d.storyboard : [];
+    const ed = Array.isArray(d.editing_notes) ? d.editing_notes : [];
+    const tg = Array.isArray(d.hashtags) ? d.hashtags : [];
+    out.push({
+      hook: String(d.hook || ''),
+      caption: String(d.caption || ''),
+      video_idea: String(d.video_idea || ''),
+      storyboard: sb.map((s: any) => ({
+        start_s: Number((s && s.start_s) || 0),
+        end_s: Number((s && s.end_s) || 0),
+        instruction: String((s && s.instruction) || ''),
+        overlay: String((s && s.overlay) || '')
+      })),
+      editing_notes: ed.map((e: any) => String(e || '')),
+      cta: String(d.cta || ''),
+      hashtags: tg.map((t: any) => String(t || '')),
+      posting_suggestion: String(d.posting_suggestion || ''),
+      platform_notes: String(d.platform_notes || '')
+    });
+  }
+  return { days: out };
+}
+
+function ensureExactly30(plan: Plan): Plan {
+  function fallbackDay(i: number): DayItem {
+    return {
+      hook: 'Hook ' + String(i + 1),
+      caption: 'Caption ' + String(i + 1),
+      video_idea: 'Idea ' + String(i + 1),
+      storyboard: [
+        { start_s: 0, end_s: 3, instruction: 'Establish subject', overlay: 'Title' },
+        { start_s: 4, end_s: 8, instruction: 'Demonstrate key action', overlay: 'Step' },
+        { start_s: 9, end_s: 12, instruction: 'Close-up detail', overlay: 'Detail' },
+        { start_s: 13, end_s: 16, instruction: 'Outcome shot', overlay: 'Result' }
+      ],
+      editing_notes: ['Tight cuts', 'On-screen text', 'Native captions'],
+      cta: 'Try this today and tag us.',
+      hashtags: ['#tips', '#guide', '#howto', '#niche'],
+      posting_suggestion: 'Post in your audience prime evening hour.',
+      platform_notes: 'Add quick captions for TikTok/Reels.'
+    };
+  }
+
+  let days = Array.isArray(plan.days) ? plan.days.slice(0, 30) : [];
+  while (days.length < 30) days.push(fallbackDay(days.length));
+  return { days };
+}
+
+/* ============================= DOCX ============================= */
+
+function buildDocx(plan: Plan, meta: Inputs): Promise<Buffer> {
+  function h1(text: string) { return new Paragraph({ text, heading: HeadingLevel.HEADING_1 }); }
+  function h2(text: string) { return new Paragraph({ text, heading: HeadingLevel.HEADING_2 }); }
+  function p(text: string)  { return new Paragraph({ text }); }
+
+  // Cover: content balance display
+  let edu = '';
+  let ent = '';
+  if (meta && meta.content_balance !== undefined && meta.content_balance !== null && meta.content_balance !== '') {
+    const v = Number(meta.content_balance);
+    if (!isNaN(v)) {
+      const vc = Math.max(0, Math.min(100, Math.round(v)));
+      edu = String(vc) + '% educational';
+      ent = String(100 - vc) + '% entertaining';
+    }
+  }
+
+  const children: any[] = [];
+
+  // Title + generated date + divider
+  children.push(new Paragraph({ text: 'QuickPostKit - 30-Day Plan', heading: HeadingLevel.TITLE }));
+  children.push(p('Generated: ' + new Date().toISOString().slice(0, 10)));
+  children.push(p('----------------------------------------'));
+  children.push(p('Niche: ' + (meta.niche || '')));
+  children.push(p('Audience: ' + (meta.audience || '')));
+  children.push(p('Product or Service: ' + (meta.product_or_service || '')));
+  children.push(p('Primary Platform: ' + (meta.primary_platform || '')));
+  children.push(p('Tone: ' + (meta.tone || '')));
+  children.push(p('Video Comfort: ' + (meta.video_comfort || '')));
+  children.push(p('Monthly Goal: ' + (meta.monthly_goal || '')));
+  children.push(p('Content Balance: ' + (edu ? (ent ? (edu + ' / ' + ent) : edu) : '')));
+  children.push(p('Hashtag Style: ' + (meta.hashtag_style || '')));
+  children.push(p('Special Instructions: ' + (meta.special_instructions || '')));
+  children.push(p('Location: ' + (meta.location || '')));
+  children.push(p(''));
+
+  // Quickstart
+  children.push(h1('Quickstart Guide'));
+  const dash = '- ';
+  const quickstart = [
+    'Pick 3 core angles (education, demo, proof) and rotate them.',
+    'Batch film 5-8 videos in one session; keep setups identical.',
+    'Hook in the first 2 seconds with motion or contrast.',
+    'Shoot A-roll steady; layer B-roll for texture and pacing.',
+    'Add native captions and on-screen text for key beats.',
+    'Keep total runtime 12-20s; punchy cuts 0.7-1.2s.',
+    'Use 4-6 storyboard shots; vary framings and movement.',
+    'Post at your audience peak hour; reply to comments fast.'
+  ];
+  for (const s of quickstart) children.push(p(dash + s));
+  children.push(p(''));
+
+  // 30 days
+  for (let i = 0; i < plan.days.length; i++) {
+    const d = plan.days[i];
+    const hashLine = (Array.isArray(d.hashtags) ? d.hashtags : []).map((h: string) => {
+      const t = String(h || '').trim();
+      return t.startsWith('#') ? t : ('#' + t);
+    }).join(' ');
+    children.push(h1('Day ' + String(i + 1)));
+    children.push(p('Hook: ' + d.hook));
+    children.push(p('Caption: ' + d.caption));
+    children.push(p('Video Idea: ' + d.video_idea));
+    children.push(h2('Storyboard'));
+    for (const s of d.storyboard) {
+      children.push(p('[' + String(s.start_s) + '-' + String(s.end_s) + 's] ' + s.instruction + ' | Overlay: ' + s.overlay));
+    }
+    children.push(h2('Editing Notes'));
+    for (const e of d.editing_notes) children.push(p(dash + e));
+    children.push(p('CTA: ' + d.cta));
+    children.push(p('Hashtags: ' + hashLine));
+    children.push(p('Posting Suggestion: ' + d.posting_suggestion));
+    children.push(p('Platform Notes: ' + d.platform_notes));
+    children.push(p(''));
+  }
+
+  // Platform-Specific Guide
+  children.push(h1('Platform-Specific Guide'));
+  children.push(h2('TikTok'));
+  for (const s of [
+    'Hook by 0-2s with motion or contrast.',
+    'Native captions; avoid reposted watermarks.',
+    '6-12s total; jump cuts; align text hits to beat.',
+    'Use rising sounds in your niche (see Appendix A).',
+    'End with explicit action: save, share, comment a keyword.'
+  ]) children.push(p(dash + s));
+  children.push(p(''));
+  children.push(h2('Instagram Reels'));
+  for (const s of [
+    'Strong cover frame with readable title.',
+    '7-12s pacing; crisp cuts; color pop.',
+    'Pin winners to Highlights; remix carousels from best posts.',
+    'Use native text styles and add location tags when relevant.',
+    'Test 3 caption lengths: micro, short, story.'
+  ]) children.push(p(dash + s));
+  children.push(p(''));
+  children.push(h2('YouTube Shorts'));
+  for (const s of [
+    '15-30s; slightly slower pacing than TikTok.',
+    'Clear narration or on-screen text for context.',
+    'CTA to a longer video or resources in description.',
+    'Consistent thumbnail style for Shorts shelf.',
+    'Use chapters in description if multi-step.'
+  ]) children.push(p(dash + s));
+  children.push(p(''));
+  children.push(h2('LinkedIn'));
+  for (const s of [
+    '20-45s explainers; lead with a stat, proof, or mini case study.',
+    'Subtitles mandatory; many watch muted.',
+    'Text post above video should summarize value in 2 lines.',
+    'Tag people or companies only when truly relevant.',
+    'End with a question to spark professional comments.'
+  ]) children.push(p(dash + s));
+
+  // Extra spacing BEFORE Recycling Plan
+  children.push(p(''));
+  children.push(p(''));
+
+  // Recycling Plan
+  children.push(h1('Recycling Plan'));
+  for (const s of [
+    'Turn top 3 hooks into carousels with 6-8 frames.',
+    'Combine 3 similar tips into a 30s roundup.',
+    'Make a before/after split-screen of your best result.',
+    'Cut a vertical teaser for YouTube; link long-form.',
+    'Convert 1 explainer into a talking-head plus B-roll remix.',
+    'Pull 5 comments and film replies as rapid Q and A.',
+    'Turn 2 best captions into email subject lines and send.',
+    'Archive shots to a B-roll library for future edits.'
+  ]) children.push(p(dash + s));
+
+  // Extra spacing AFTER Recycling Plan and BEFORE Cheat Sheet
+  children.push(p(''));
+  children.push(p(''));
+
+  // Cheat Sheet
+  children.push(h1('Cheat Sheet'));
+  children.push(h2('Hooks'));
+  for (const s of [
+    'Start with a strong claim or pattern break.',
+    'Show outcome first, then rewind to steps.',
+    'Use an objection flip: You think X, but actually...'
+  ]) children.push(p(dash + s));
+  children.push(p(''));
+  children.push(h2('Filming'));
+  for (const s of [
+    'Natural light if possible; face key light.',
+    'Mix framings: wide, medium, macro details.',
+    'Add one motivated camera move per shot.'
+  ]) children.push(p(dash + s));
+  children.push(p(''));
+  children.push(h2('Editing'));
+  for (const s of [
+    '0.7-1.2s average cut; reset visuals every 3-4s.',
+    'On-screen labels for steps and numbers.',
+    'Align cuts to beats; keep text large and readable.'
+  ]) children.push(p(dash + s));
+
+  // Extra spacing AFTER Cheat Sheet and BEFORE Evergreen
+  children.push(p(''));
+  children.push(p(''));
+
+  // Evergreen Content Ideas
+  children.push(h1('Evergreen Content Ideas'));
+  for (const s of [
+    'Myth vs fact in your niche.',
+    '3 quick tips that solve a common pain.',
+    'Mini demo with before and after.',
+    'FAQ bite with on-screen text only.',
+    'Case study: problem, process, result.',
+    'Price vs value breakdown in 20 seconds.',
+    'Tool or gear loadout for beginners.',
+    'Origin story: why you started.',
+    'Challenge viewers to try one small action.',
+    'Testimonial highlight with overlay text.'
+  ]) children.push(p(dash + s));
+
+  // Extra spacing AFTER Evergreen and BEFORE Appendices
+  children.push(p(''));
+  children.push(p(''));
+
+  // Appendix A - Trending Sounds (per platform)
+  children.push(h1('Appendix A - How to Find Trending Sounds (Detailed)'));
+  children.push(h2('TikTok'));
+  for (const s of [
+    'Use TikTok Creative Center: set country and niche; browse Songs -> Rising.',
+    'Open a candidate audio; check recent top videos for pacing and caption patterns.',
+    'Save 10-20 candidates to a Sounds list labeled by vibe (high-energy, calm, storytelling).',
+    'In-app search: niche keyword + "sound"; prefer steady week-over-week growth.',
+    'Rule of fit: if first 2 seconds do not support your visual hook, skip it.'
+  ]) children.push(p(dash + s));
+  children.push(p(''));
+  children.push(h2('Instagram Reels'));
+  for (const s of [
+    'Open Professional Dashboard -> Audio; pick audios with 10k-150k uses trending upward.',
+    'Tap audio name -> Save Audio; preview timing against your 0-2s hook.',
+    'From strong Reels, tap audio to inspect formats that win in your niche.',
+    'Update your saved audio list weekly; remove tracks that cooled off.'
+  ]) children.push(p(dash + s));
+  children.push(p(''));
+  children.push(h2('YouTube Shorts'));
+  for (const s of [
+    'Use mobile "Sounds" picker -> Trending tab; confirm beats align with storyboard hits.',
+    'Avoid overused tracks that drown narration; favor percussive cues for text hits.',
+    'Check top Shorts using the sound within last 7 days for format alignment.'
+  ]) children.push(p(dash + s));
+
+  // Appendix B - 10-Beats Script Framework (expanded)
+  children.push(h1('Appendix B - 10-Beats Script Framework (Expanded)'));
+  for (const s of [
+    'Hook (0-2s): outcome first or bold claim.',
+    'Context: who this is for in 1 line.',
+    'Promise: what they get today.',
+    'Step 1: short command + on-screen label.',
+    'Step 2: show with motion; no talking heads if not comfortable.',
+    'Step 3: macro proof or counterexample.',
+    'Proof: stat, time-lapse, or split-screen.',
+    'Objection flip: "You think X, but actually..."',
+    'Result: show payoff or before/after.',
+    'CTA: one specific action tied to goal.'
+  ]) children.push(p(dash + s));
+
+  // Appendix C - Filming and Edit Cheats (expanded)
+  children.push(h1('Appendix C - Filming and Edit Cheats (Expanded)'));
+  for (const s of [
+    'Framings: alternate wide -> macro -> POV -> reaction for variety.',
+    'Movement: 1 motivated move per shot (pan, tilt, push-in, slider, handheld).',
+    'Lighting: face key light; avoid mixed color temps.',
+    'Text: large, bold, 5-7 words per hit; place safe zones.',
+    'Rhythm: cut on motion; add 1 beat-synced text hit per video.',
+    'SFX: use 1 subtle whoosh/pop on payoff; avoid spam.'
+  ]) children.push(p(dash + s));
+
+  // Appendix D - Weekly Batch Plan (step-by-step)
+  children.push(h1('Appendix D - Weekly Batch Plan (Step-by-Step)'));
+  for (const s of [
+    'Mon: collect 10 hooks, 5 sound candidates, 5 proofs.',
+    'Tue: storyboard 7 videos using 4-6 shots each.',
+    'Wed: batch film in 60-90 minutes with fixed lighting.',
+    'Thu: edit all in one block; export 6-12s where possible.',
+    'Fri: schedule posts; prep 3 quick replies to common comments.',
+    'Sat/Sun: engage 20 minutes after posting; save best comments.'
+  ]) children.push(p(dash + s));
+
+  // Appendix E - Posting Checklist (detailed)
+  children.push(h1('Appendix E - Posting Checklist (Detailed)'));
+  for (const s of [
+    'Cover: readable title; contrasty frame.',
+    'Hook: first text hit by 0-2s; motion.',
+    'Length: 12-20s target; never ramble.',
+    'Captions: human tone; 1-2 sentences.',
+    'Hashtags: 4-6 niche-aware; mix volumes.',
+    'CTA: 1 specific action; no doubles.',
+    'Pin winners; remix top posts next week.'
+  ]) children.push(p(dash + s));
+
+  // Appendix F - Storyboard Shot Guide
+  children.push(h1('Appendix F - Storyboard Shot Guide'));
+  for (const s of [
+    'Wide establish: context and contrast in 1-2s.',
+    'Macro detail: texture or proof in 2-3s.',
+    'POV action: hands doing the step.',
+    'Reaction/payoff: face or result for emotion.',
+    'Motion trick: push-in, whip-pan, snap-zoom, parallax.',
+    'Rule: alternate framing + movement every shot.'
+  ]) children.push(p(dash + s));
+
+  // Footer
+  const cSign = String.fromCharCode(0x00A9);
+  const footerText = cSign + ' 2025 Fifth Element Labs - Practical AI at the right price';
+  const doc = new Document({
+    sections: [
+      {
+        properties: {},
+        footers: {
+          default: new Footer({
+            children: [ new Paragraph({ text: footerText, alignment: AlignmentType.CENTER }) ]
+          })
+        },
+        children
+      }
+    ]
+  });
+  return Packer.toBuffer(doc);
+}); }
+  function h2(text: string) { return new Paragraph({ text, heading: HeadingLevel.HEADING_2 }); }
+  function p(text: string)  { return new Paragraph({ text }); }
+
+  // Cover: content balance display
+  let edu = '';
+  let ent = '';
+  if (meta && meta.content_balance !== undefined && meta.content_balance !== null && meta.content_balance !== '') {
+    const v = Number(meta.content_balance);
+    if (!isNaN(v)) {
+      const vc = Math.max(0, Math.min(100, Math.round(v)));
+      edu = String(vc) + '% educational';
+      ent = String(100 - vc) + '% entertaining';
+    }
+  }
+
+  const children: any[] = [];
+
+  // Title + generated date + divider
+  children.push(new Paragraph({ text: 'QuickPostKit - 30-Day Plan', heading: HeadingLevel.TITLE }));
+children.push(p('Generated: ' + new Date().toISOString().slice(0, 10)));
+children.push(p('----------------------------------------'));
+children.push(p('Niche: ' + (meta.niche || '')));
+children.push(p('Audience: ' + (meta.audience || '')));
+children.push(p('Product or Service: ' + (meta.product_or_service || '')));
+children.push(p('Primary Platform: ' + (meta.primary_platform || '')));
+children.push(p('Tone: ' + (meta.tone || '')));
+children.push(p('Video Comfort: ' + (meta.video_comfort || '')));
+children.push(p('Monthly Goal: ' + (meta.monthly_goal || '')));
+children.push(p('Content Balance: ' + (edu ? (ent ? (edu + ' / ' + ent) : edu) : '')));
+children.push(p('Hashtag Style: ' + (meta.hashtag_style || '')));
+children.push(p('Special Instructions: ' + (meta.special_instructions || '')));
+children.push(p('Location: ' + (meta.location || '')));
+children.push(p(''));
+
+  // Quickstart (unchanged core guidance)
+  children.push(h1('Quickstart Guide'));
+  const dash = '- '; // plain ASCII dash prefix
+  const quickstart = [
+    'Pick 3 core angles (education, demo, proof) and rotate them.',
+    'Batch film 5-8 videos in one session; keep setups identical.',
+    'Hook in the first 2 seconds with motion or contrast.',
+    'Shoot A-roll steady; layer B-roll for texture and pacing.',
+    'Add native captions and on-screen text for key beats.',
+    'Keep total runtime 12-20s; punchy cuts 0.7-1.2s.',
+    'Use 4-6 storyboard shots; vary framings and movement.',
+    'Post at your audience peak hour; reply to comments fast.'
+  ];
+  for (const s of quickstart) children.push(p(dash + s));
+  children.push(p(''));
+
+  // 30 days
+  for (let i = 0; i < plan.days.length; i++) {
+    const d = plan.days[i];
+    children.push(h1('Day ' + String(i + 1)));
+    children.push(p('Hook: ' + d.hook));
+    children.push(p('Caption: ' + d.caption));
+    children.push(p('Video Idea: ' + d.video_idea));
+    children.push(h2('Storyboard'));
+    for (const s of d.storyboard) {
+      children.push(p('[' + String(s.start_s) + '-' + String(s.end_s) + 's] ' + s.instruction + ' | Overlay: ' + s.overlay));
+    }
+    children.push(h2('Editing Notes'));
+    for (const e of d.editing_notes) children.push(p(dash + e));
+    children.push(p('CTA: ' + d.cta));
+    children.push(p('Hashtags: ' + d.hashtags.join(' ')));
+    children.push(p('Posting Suggestion: ' + d.posting_suggestion));
+    children.push(p('Platform Notes: ' + d.platform_notes));
+    children.push(p(''));
+  }
+
+  // Platform-Specific Guide (kept, then add spacing before Recycling Plan)
+  children.push(h1('Platform-Specific Guide'));
+  children.push(h2('TikTok'));
+  for (const s of [
+    'Hook by 0-2s; bold motion or contrast.',
+    'Native captions; avoid reposted watermarks.',
+    '6-12s total; jump cuts; add sound-aligned text.',
+    'Use trending sounds that fit your niche (not random).',
+    'End with explicit action: save, share, comment a keyword.'
+  ]) children.push(p(dash + s));
+  children.push(p(''));
+  children.push(h2('Instagram Reels'));
+  for (const s of [
+    'Strong cover frame with readable title.',
+    '7-12s pacing; crisp cuts; color pop.',
+    'Pin winners to Highlights; remix carousels from best posts.',
+    'Use native text styles and add location tags when relevant.',
+    'Experiment with 3 caption lengths: micro, short, story.'
+  ]) children.push(p(dash + s));
+  children.push(p(''));
+  children.push(h2('YouTube Shorts'));
+  for (const s of [
+    '15-30s; slightly slower pacing than TikTok.',
+    'Clear narration or on-screen text for context.',
+    'CTA to a longer video or resources in description.',
+    'Consistent thumbnail style for Shorts shelf.',
+    'Use chapters in description if multi-step.'
+  ]) children.push(p(dash + s));
+  children.push(p(''));
+  children.push(h2('LinkedIn'));
+  for (const s of [
+    '20-45s explainers; lead with a stat, proof, or mini case study.',
+    'Subtitles mandatory; many watch muted.',
+    'Text post above video should summarize value in 2 lines.',
+    'Tag people or companies only when truly relevant.',
+    'End with a question to spark professional comments.'
+  ]) children.push(p(dash + s));
+
+  // Extra spacing BEFORE Recycling Plan
+  children.push(p(''));
+  children.push(p(''));
+
+  // Recycling Plan (kept text)
+  children.push(h1('Recycling Plan'));
+  for (const s of [
+    'Turn top 3 hooks into carousels with 6-8 frames.',
+    'Combine 3 similar tips into a 30s roundup.',
+    'Make a before/after split-screen of your best result.',
+    'Cut a vertical teaser for YouTube; link long-form.',
+    'Convert 1 explainer into a talking-head plus B-roll remix.',
+    'Pull 5 comments and film replies as rapid Q and A.',
+    'Turn 2 best captions into email subject lines and send.',
+    'Archive shots to a B-roll library for future edits.'
+  ]) children.push(p(dash + s));
+
+  // Extra spacing AFTER Recycling Plan and BEFORE Cheat Sheet
+  children.push(p(''));
+  children.push(p(''));
+
+  // Cheat Sheet
+  children.push(h1('Cheat Sheet'));
+  children.push(h2('Hooks'));
+  for (const s of [
+    'Start with a strong claim or pattern break.',
+    'Show outcome first, then rewind to steps.',
+    'Use an objection flip: You think X, but actually...'
+  ]) children.push(p(dash + s));
+  children.push(p(''));
+  children.push(h2('Filming'));
+  for (const s of [
+    'Natural light if possible; face key light.',
+    'Mix framings: wide, medium, macro details.',
+    'Add one motivated camera move per shot.'
+  ]) children.push(p(dash + s));
+  children.push(p(''));
+  children.push(h2('Editing'));
+  for (const s of [
+    '0.7-1.2s average cut; reset visuals every 3-4s.',
+    'On-screen labels for steps and numbers.',
+    'Align cuts to beats; keep text large and readable.'
+  ]) children.push(p(dash + s));
+
+  // Extra spacing AFTER Cheat Sheet and BEFORE Evergreen
+  children.push(p(''));
+  children.push(p(''));
+
+  // Evergreen Content Ideas
+  children.push(h1('Evergreen Content Ideas'));
+  for (const s of [
+    'Myth vs fact in your niche.',
+    '3 quick tips that solve a common pain.',
+    'Mini demo with before and after.',
+    'FAQ bite with on-screen text only.',
+    'Case study: problem, process, result.',
+    'Price vs value breakdown in 20 seconds.',
+    'Tool or gear loadout for beginners.',
+    'Origin story: why you started.',
+    'Challenge viewers to try one small action.',
+    'Testimonial highlight with overlay text.'
+  ]) children.push(p(dash + s));
+
+  // Extra spacing AFTER Evergreen and BEFORE Appendix A
+  children.push(p(''));
+  children.push(p(''));
+
+  // Appendix A (detailed)
+  children.push(h1('Appendix A - How to Find Trending Sounds (Detailed)'));
+  for (const s of [
+    'TikTok Creative Center: set country and category to match your niche; browse Songs -> Rising; favor audio with steady week-over-week growth.',
+    'Open a candidate audio and inspect recent top videos; confirm format match for your content (cuts, pacing, captions).',
+    'Save 10-20 candidates to a Sounds List; label by vibe (high-energy, calm, storytelling) for quick pairing later.',
+    'In-app TikTok search: use niche keyword + "sound" (e.g., "wedding photography sound"); check Uses count and recency.',
+    'Instagram Reels: open Professional Dashboard -> Audio; pick audios with 10k-150k uses that are trending upward.',
+    'From a good Reel, tap the audio name -> Save Audio; review "Use audio" preview to test timing for your storyboard.',
+    'YouTube Shorts: use mobile "Sounds" picker and the "Trending" tab; cross-check that beats align with your 0-3s hook.',
+    'Keep a weekly sheet: date, platform, audio link, use count, example links, notes on hook timing; refresh every 7 days.',
+    'Rule of fit: if the first 2-3 seconds do not support your visual hook, skip the sound even if it is trending.',
+    'Legal note: always use sounds inside each platform native library to avoid takedowns.'
+  ]) children.push(p(dash + s));
+
+  // Footer on every page (real page footer)
+  const cSign = String.fromCharCode(0x00A9); // inject Ãƒâ€šÃ‚Â© at runtime to keep source ASCII-only
+  const footerText = cSign + ' 2025 Fifth Element Labs - Practical AI at the right price';
+
+  const doc = new Document({
+    sections: [
+      {
+        properties: {},
+        footers: {
+          default: new Footer({
+            children: [ new Paragraph({ text: footerText, alignment: AlignmentType.CENTER }) ]
+          })
+        },
+        children
+      }
+    ]
+  });
+
+  return Packer.toBuffer(doc);
+}
+
+/* ============================= HTTP Handler ============================= */
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json().catch(() => ({}));
+    const data: Inputs = body || {};
+
+    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const prompt = buildPrompt(data);
+
+    const completion = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: 'You are a JSON generator that strictly follows format rules AND enforces uniqueness, bold creativity, storyboard variety, and tone consistency.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.6
+    });
+
+    const raw = completion.choices[0] && completion.choices[0].message && completion.choices[0].message.content
+      ? completion.choices[0].message.content
+      : '{}';
+
+    let plan: Plan = { days: [] };
+    try { plan = coercePlan(JSON.parse(raw)); } catch { plan = { days: [] }; }
+    plan = ensureExactly30(plan);
+
+    const buf = await buildDocx(plan, data);
+    const fileName = 'QuickPostKit_' + String(Date.now()) + '.docx';
+
+    return new Response(buf, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'Content-Disposition': 'attachment; filename=' + fileName
+      }
+    });
+  } catch (err: any) {
+    const msg = err && err.message ? String(err.message) : 'Unknown error';
+    return new Response(JSON.stringify({ error: msg }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}

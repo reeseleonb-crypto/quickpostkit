@@ -60,7 +60,7 @@ export default function Home() {
             Professional content, without the overwhelm.
           </p>
           <p className="mt-4 max-w-2xl text-slate-300">
-            Tailored to your 11 inputs. Hooks, captions, filming directions, and a polished Word doc download  ready fast.
+            Tailored to your 10 inputs. Hooks, captions, filming directions, and a polished Word doc download  ready fast.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <a href="/generate" className="group inline-flex items-center rounded-2xl bg-gradient-to-r from-fuchsia-500 via-orange-500 to-cyan-400 px-5 py-3 text-sm font-semibold text-black shadow-[0_8px_40px_-12px_rgba(255,61,240,.6)] [background-size:200%_100%] hover:[background-position:100%_0] active:scale-[.98]">
@@ -76,7 +76,7 @@ export default function Home() {
           <div className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-3">
             {[
               { title: "Practical & Affordable", body: "$5 once. Thats it." },
-              { title: "Tailored by 11 inputs", body: "Niche, audience, tone, platform, and more." },
+              { title: "Tailored by 10 Inputs", body: "Niche, audience, tone, platform, and more." },
               { title: "Word Doc Download", body: "30 days with filming notes and checklists." },
             ].map((c, i) => (
               <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,.04)] transition hover:shadow-[0_0_40px_rgba(255,61,240,.15)]">
@@ -89,40 +89,38 @@ export default function Home() {
       </section>
 
       {/* Who it's for */}
-      <section id="who" className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 mt-16">
-  <h2 className="text-3xl sm:text-4xl font-bold text-slate-100 text-center relative inline-block">
-    Who It’s For
-    <span className="block h-1 w-20 mx-auto mt-3 bg-gradient-to-r from-fuchsia-500 via-orange-500 to-cyan-400 rounded"></span>
-  </h2>
+      <section id="who" className="border-t border-white/5 bg-gradient-to-b from-transparent to-black/20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
+          <h2 className="text-2xl sm:text-3xl font-semibold text-white">Who its for</h2>
+          <p className="mt-3 max-w-3xl text-slate-300">
+            This web app is built for small business owners, solo creators, and service providers who want to market themselves on social media but dont know how to film or structure content. Its especially valuable for anyone who feels overwhelmed by video  landscapers, realtors, fitness coaches, wedding vendors, estheticians  people whose expertise is not video production but who still need attention online.
+          </p>
+          <p className="mt-4 max-w-3xl text-slate-300">
+            Instead of handing you vague content ideas, QuickPostKit gives you step-by-step filming directions that even a beginner can follow with their phone, turning uncertainty into confidence. Hooks, captions, and CTAs are tied directly to your niche, tone, and goals  so every post feels unique and authentic.
+          </p>
+          <p className="mt-4 max-w-3xl text-slate-300">
+            Because it delivers a full 30-day plan complete with guides, cheat sheets, and recycling tips, its also perfect for anyone who wants to save time and avoid paying hundreds to freelancers. In short: if you want to look professional and consistent on TikTok, Instagram, YouTube, or LinkedIn  without being a marketing expert or videographer  this app is for you.
+          </p>
 
-  <div className="mt-6 space-y-4 text-slate-300 leading-relaxed text-lg">
-    <p>
-      QuickPostKit is designed for small business owners, independent creators, and service providers who
-      want to market themselves on social media but do not know how to film, plan, or structure content.
-    </p>
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-4">
+            {[
+              { t: "Local Shops", d: "Boutiques, cafés, salonsshow up with daily ideas that fit your vibe." },
+              { t: "Coaches & Consultants", d: "Teach, build trust, book more calls with smart, repeatable content." },
+              { t: "First-Time Creators", d: "Zero to consistent: hooks, captions, and filming directions included." },
+              { t: "Side Hustlers", d: "Ship fast, look pro, and grow without spending hours planning." },
+            ].map((s, i) => (
+              <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-5 hover:shadow-[0_0_40px_rgba(5,217,232,.1)] transition">
+                <h3 className="font-semibold text-white">{s.t}</h3>
+                <p className="mt-1 text-sm text-slate-300">{s.d}</p>
+              </div>
+            ))}
+          </div>
 
-    <p>
-      It is especially valuable for professionals whose expertise is not in video production — landscapers,
-      realtors, fitness coaches, wedding vendors, estheticians, and many others who still need an engaging
-      online presence but lack the time or training to build one from scratch.
-    </p>
-
-    <p>
-      Instead of vague “content ideas,” QuickPostKit delivers a complete 30-day plan with hooks, captions,
-      calls-to-action, and step-by-step filming directions that anyone can follow with a phone. If you select
-      Talking Heads or Mixed as your video style, your kit also includes concise, natural scripts you can read
-      straight to camera — a premium service typically sold by agencies for hundreds of dollars, included here
-      for just $5.
-    </p>
-
-    <p>
-      Because your plan is tailored to your <span className="font-semibold text-slate-100">11 simple inputs</span> — niche, audience, product or service,
-      location, primary platform, tone, monthly goal, video style, content balance, hashtag style, and special
-      instructions — every kit is unique, authentic, and aligned with your goals. What would normally cost
-      hundreds from freelancers or agencies is now delivered instantly, in minutes, for pennies on the dollar.
-    </p>
-  </div>
-</section>
+          <div className="mt-6 text-sm text-slate-400">
+            Well help you get better over time  each kit is unique to your inputs, and you can regenerate whenever youre ready for a fresh plan.
+          </div>
+        </div>
+      </section>
 
       {/* How it works */}
       <section id="how" className="border-t border-white/5">
@@ -130,7 +128,7 @@ export default function Home() {
           <h2 className="text-2xl sm:text-3xl font-semibold text-white">How it works</h2>
           <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-4">
             {[
-              { n: 1, t: "Fill the 11-input form", d: "Tell us niche, audience, product or service, location, primary platform, tone, monthly goal, video style, content balance, hashtag style, and special instructions." },
+              { n: 1, t: "Fill the 10-input form", d: "Tell us niche, audience, platform, tone, goals." },
               { n: 2, t: "Pay $5 via Stripe", d: "One-time payment. No logins. No subscriptions." },
               { n: 3, t: "We assemble your kit", d: "Unique, non-cliché content plan generated fast." },
               { n: 4, t: "Auto-download .docx", d: "A polished Word doc with all 30 days." },
@@ -259,8 +257,4 @@ export default function Home() {
     </div>
   );
 }
-
-
-
-
 

@@ -1,20 +1,4 @@
-﻿export const metadata = {
-  title: "5-Day Sample Content Plan — QuickPostKit",
-  description: "Preview 5 sample days from a 30-day social content kit, including hooks, captions, filming directions, and posting tips.",
-  openGraph: {
-    title: "5-Day Sample Content Plan — QuickPostKit",
-    description: "Preview 5 sample days from a 30-day social content kit, including hooks, captions, filming directions, and posting tips.",
-    url: "https://quickpostkit.com/sample",
-    siteName: "QuickPostKit",
-    type: "website"
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "5-Day Sample Content Plan — QuickPostKit",
-    description: "Preview 5 sample days from a 30-day social content kit, including hooks, captions, filming directions, and posting tips."
-  }
-};
-type DaySample = {
+﻿type DaySample = {
   day: number;
   hook: string;
   caption: string;
@@ -216,4 +200,3 @@ export default function Sample() {
     </main>
   );
 }
-
