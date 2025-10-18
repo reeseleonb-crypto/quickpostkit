@@ -586,11 +586,18 @@ export async function POST(req: Request) {
     const batch3 = await generateBatch(client, data, 20, 10);
 
     // Stitch
-    let stitched: Plan = { days: [] };
-    stitched.days = []
-      .concat(batch1.days || [])
-      .concat(batch2.days || [])
-      .concat(batch3.days || []);
+// types must exist somewhere above:
+// type DayItem = { /* fields */ };
+// type Plan = { days: DayItem[] };
+
+let stitched: Plan = { days: [] as DayItem[] };
+
+const d1: DayItem[] = batch1?.days ?? [];
+const d2: DayItem[] = batch2?.days ?? [];
+const d3: DayItem[] = batch3?.days ?? [];
+
+stitched.days = [...d1, ...d2, ...d3];
+
 
     // Sanitize for comfort mode (e.g., remove any face-to-camera language)
     stitched.days = (stitched.days || []).map(function(d){ return sanitizeFilmingSteps(d, comfort); });
