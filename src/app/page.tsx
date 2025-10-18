@@ -109,10 +109,7 @@ export default function Home() {
 
     <p>
       Instead of vague “content ideas,” QuickPostKit delivers a complete 30-day plan with hooks, captions,
-      calls-to-action, and step-by-step filming directions that anyone can follow with a phone. If you select
-      Talking Heads or Mixed as your video style, your kit also includes concise, natural scripts you can read
-      straight to camera — a premium service typically sold by agencies for hundreds of dollars, included here
-      for just $5.
+      calls-to-action, and step-by-step filming directions that anyone can follow with a phone. All included here for just $5.
     </p>
 
     <p>

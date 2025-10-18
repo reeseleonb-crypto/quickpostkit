@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+﻿import OpenAI from 'openai';
 import { Document, Packer, Paragraph, HeadingLevel, Footer, AlignmentType } from 'docx';
 
 export const runtime = 'nodejs';
@@ -316,7 +316,7 @@ function buildDocx(plan: Plan, meta: Inputs): Promise<Buffer> {
   children.push(p(''));
   children.push(p(''));
 
-  // Appendix A - Trending Sounds
+  // Appendix A - Trending Sounds (Detailed)
   children.push(h1('Appendix A - How to Find Trending Sounds (Detailed)'));
   children.push(h2('TikTok'));
   for (const s of [
@@ -342,6 +342,64 @@ function buildDocx(plan: Plan, meta: Inputs): Promise<Buffer> {
     'Check top Shorts using the sound in the last 7 days for format alignment.'
   ]) children.push(p('- ' + s));
 
+  // Appendix B - Talking-Head Content Guide
+  children.push(h1('Appendix B - Talking-Head Content Guide'));
+  children.push(p('Talking-head videos build trust with local audiences. Use this simple pattern for 5-8 seconds on-camera without memorizing a script:'));
+  for (const s of [
+    'Hook: short question, pain point, or result tied to todays video idea.',
+    'Proof: one tangible detail you actually use (tool, method, measurement).',
+    'CTA: one action only (comment a keyword, save, DM for estimate).',
+    'Keep it under 8s. Speak naturally. If you hate on-camera, put the same words as on-screen text.'
+  ]) children.push(p('- ' + s));
+  children.push(p(''));
+
+  // Appendix C - Evergreen Post Ideas
+  children.push(h1('Appendix C - Evergreen Post Ideas'));
+  for (const s of [
+    'Before/After reveal',
+    '3 quick tips that solve a common pain',
+    'Time-lapse of process with overlays',
+    'FAQ bite with on-screen text only',
+    'Customer mini case study: problem -> process -> result',
+    'Tool or gear loadout',
+    'Myth vs fact in your niche',
+    'Origin story: why you started'
+  ]) children.push(p('- ' + s));
+  children.push(p(''));
+
+  // Appendix D - Recycling & Repurposing
+  children.push(h1('Appendix D - Recycling & Repurposing'));
+  for (const s of [
+    'Trim best clips into a 30s roundup',
+    'Turn winning hooks into carousels (6-8 frames)',
+    'Reply-on-video to 5 audience comments',
+    'Repost top 3 videos at new times with new cover frames',
+    'Compile a month-in-review montage',
+    'Archive good shots to a B-roll folder'
+  ]) children.push(p('- ' + s));
+  children.push(p(''));
+
+  // Appendix E - Quick Hashtag Guide
+  children.push(h1('Appendix E - Quick Hashtag Guide'));
+  for (const s of [
+    'Blend 2-3 niche tags (e.g., #drivewaycleaning)',
+    'Add 1-2 location tags (e.g., #wilmingtonnc)',
+    'Use 1 broad tag max (e.g., #homeimprovement)',
+    'Keep lowercase; 4-6 total; avoid spammy blocks'
+  ]) children.push(p('- ' + s));
+  children.push(p(''));
+
+  // Appendix F - Editing Cheat Sheet
+  children.push(h1('Appendix F - Editing Cheat Sheet'));
+  for (const s of [
+    'Cut every 0.7-1.2s; reset visuals every 3-4s',
+    'Large readable text; keep in safe zones',
+    'Natural light; face a window; avoid harsh backlight',
+    'Clean audio; add one beat-synced text hit',
+    'Stabilize handheld shots; avoid digital zoom'
+  ]) children.push(p('- ' + s));
+  children.push(p(''));
+
   const cSign = String.fromCharCode(0x00A9);
   const footerText = cSign + ' 2025 Fifth Element Labs - Practical AI at the right price';
   const doc = new Document({
@@ -364,8 +422,8 @@ function buildDocx(plan: Plan, meta: Inputs): Promise<Buffer> {
 /* ============================= HTTP Handler ============================= */
 
 function comfortIsNoTalkingHead(v: any): boolean {
-  const s = String(v || "").toLowerCase().trim();
-  return s === "no_talking_head" || s === "no-talking-head" || s === "no talking head";
+  const s = String(v || '').toLowerCase().trim();
+  return s === 'no_talking_head' || s === 'no-talking-head' || s === 'no talking head';
 }
 
 function violatesComfort(stepText: string, comfort: string): boolean {
@@ -378,86 +436,76 @@ function violatesComfort(stepText: string, comfort: string): boolean {
 function rewriteForNoTalkingHead(stepText: string): string {
   if (!stepText) return stepText;
   let t = stepText;
-
-  // Replace face-to-camera cues with hands/POV alternatives
   t = t.replace(/face (the )?camera|look(?:ing)? at (?:the )?camera|selfie|address(?: the)? viewer|talk to camera|smile (?:at|to) camera/gi,
-                "frame hands-only or POV; do not show your face or look into the lens");
-
-  // Replace speaking cues with non-talking direction
+                'frame hands-only or POV; do not show your face or look into the lens');
   t = t.replace(/\b(?:say|speak|tell|ask)\b/gi,
-                "convey with on-screen text or demonstrate silently");
-
+                'convey with on-screen text or demonstrate silently');
   return t;
 }
 
 function sanitizeFilmingSteps(day: DayItem, comfort: string): DayItem {
   if (!day) return day;
   if (!Array.isArray(day.filming_directions)) return day;
-
   const steps = day.filming_directions.map(function (s: any) {
     const step = s || {};
-    const instr = String(step.instruction || "");
+    const instr = String(step.instruction || '');
     if (comfortIsNoTalkingHead(comfort)) {
       step.instruction = rewriteForNoTalkingHead(instr);
     }
     return step;
   });
-
   day.filming_directions = steps;
   return day;
 }
 
 function buildComfortNote(data: Inputs): string {
-  const comfort = String((data as any).video_comfort || "").toLowerCase().trim();
+  const comfort = String((data as any).video_comfort || '').toLowerCase().trim();
 
   if (comfortIsNoTalkingHead(comfort)) {
     return [
-      "COMFORT MODE: NO_TALKING_HEAD.",
-      "Hard rules:",
-      "- Do NOT show the creator's face or body facing the camera.",
-      "- Use hands-only close-ups, POV, over-the-shoulder, or product-only shots.",
-      "- Replace any 'say/speak/tell/ask' or 'look at camera/selfie/address viewers' with silent demonstration or on-screen text.",
-      "Filming directions must respect these rules."
-    ].join("\\n");
+      'COMFORT MODE: NO_TALKING_HEAD.',
+      'Hard rules:',
+      '- Do NOT show the creator\'s face or body facing the camera.',
+      '- Use hands-only close-ups, POV, over-the-shoulder, or product-only shots.',
+      '- Replace any say/speak/tell/ask or look at camera/selfie/address viewers with silent demonstration or on-screen text.',
+      'Filming directions must respect these rules.'
+    ].join('\\n');
   }
 
-  if (comfort === "talking_head") {
+  if (comfort === 'talking_head') {
     return [
-      "COMFORT MODE: TALKING_HEAD.",
-      "Include 1–2 short 'Say:' style lines and at least one head-and-shoulders framing note."
-    ].join("\\n");
+      'COMFORT MODE: TALKING_HEAD.',
+      'Include 1â€“2 short Say: style lines and at least one head-and-shoulders framing note.'
+    ].join('\\n');
   }
 
-  // mixed / default
   return [
-    "COMFORT MODE: MIXED.",
-    "Use a blend of hands-only/POV and occasional to-camera lines."
-  ].join("\\n");
+    'COMFORT MODE: MIXED.',
+    'Use a blend of hands-only/POV and occasional to-camera lines.'
+  ].join('\\n');
 }
 
 function isLowQualityDay(d: DayItem, index1: number, comfort?: string): boolean {
   if (!d) return true;
-  const hook = String(d.hook || "").trim();
-  const caption = String(d.caption || "").trim();
-  const idea = String(d.video_idea || "").trim();
+  const hook = String(d.hook || '').trim();
+  const caption = String(d.caption || '').trim();
+  const idea = String(d.video_idea || '').trim();
   const steps = Array.isArray(d.filming_directions) ? d.filming_directions : [];
 
-  // Detect generic/empty
   const genericHook = /^Hook\\s+\\d+$/i.test(hook) || hook.length < 6;
   const genericCaption = /^Caption\\s+\\d+$/i.test(caption) || caption.length < 6;
   const genericIdea = /^(Idea\\s+\\d+|)$/.test(idea);
-  const tooFewSteps = steps.length < 5; // require 5–7 as promised
+  const tooFewSteps = steps.length < 5;
   const genericStep = steps.length > 0 && steps.every(function(s: any){
-    var ins = String(s && s.instruction || "").toLowerCase();
-    return ins.indexOf("stand back") >= 0 || ins.indexOf("step 1") >= 0;
+    var ins = String(s && s.instruction || '').toLowerCase();
+    return ins.indexOf('stand back') >= 0 || ins.indexOf('step 1') >= 0;
   });
 
-  // Comfort violation: any step that still contains banned phrasing for no_talking_head
   let comfortViolation = false;
   if (comfortIsNoTalkingHead(comfort)) {
     for (let i = 0; i < steps.length; i++) {
-      const ins = String(steps[i]?.instruction || "");
-      if (violatesComfort(ins, "no_talking_head")) { comfortViolation = true; break; }
+      const ins = String(steps[i]?.instruction || '');
+      if (violatesComfort(ins, 'no_talking_head')) { comfortViolation = true; break; }
     }
   }
 
@@ -528,7 +576,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json().catch(function(){ return {}; });
     const data: Inputs = body || {};
-    const comfort = String((data as any).video_comfort || "").toLowerCase().trim();
+    const comfort = String((data as any).video_comfort || '').toLowerCase().trim();
 
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -550,7 +598,7 @@ export async function POST(req: Request) {
     // Pad/truncate to exactly 30
     stitched = ensureExactly30(stitched);
 
-    // Targeted regeneration for any low-quality days (comfort-aware; focus on 21–30 first)
+    // Targeted regeneration for any low-quality days (comfort-aware; focus on 21â€“30 first)
     for (let i = 20; i < 30; i++) {
       const dayNumber = i + 1;
       let d = stitched.days[i];
@@ -558,7 +606,6 @@ export async function POST(req: Request) {
         for (let attempt = 0; attempt < 2; attempt++) {
           const fresh = await regenerateOneDay(client, data, dayNumber);
           if (fresh) {
-            // sanitize and re-check
             const clean = sanitizeFilmingSteps(fresh, comfort);
             if (!isLowQualityDay(clean, dayNumber, comfort)) {
               stitched.days[i] = clean;
