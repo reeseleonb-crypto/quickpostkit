@@ -1,8 +1,9 @@
 ﻿"use client";
 
+import { Suspense } from "react";
 import { useState } from "react";
 import { saveQpkForm } from "@/lib/qpkFormPersist";
-import { Suspense } from "react";
+
 
 type FormValues = {
   schema_version: number;
@@ -73,7 +74,6 @@ export default function GenerateFormPage() {
       setLoading(false);
     }
   }
-import { Suspense } from "react";
 
 return (
   <Suspense fallback={null}>
