@@ -22,12 +22,20 @@ type Bucket = { times: number[] };
 const buckets = new Map<string, Bucket>();
 
 function keyFor(req: NextRequest) {
-  // Try Next.js ip helper first, then fall back to X-Forwarded-For
-  const ip = req.ip
-    || req.headers.get("x-real-ip")
-    || (req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown");
+  // Derive client IP from common proxy headers; NextRequest has no .ip in Next 15
+  const xReal = req.headers.get("x-real-ip");
+  const xFwd  = req.headers.get("x-forwarded-for");
+  const cf    = req.headers.get("cf-connecting-ip");
+
+  const ip =
+    xReal ??
+    (xFwd ? xFwd.split(",")[0].trim() : undefined) ??
+    cf ??
+    "unknown";
+
   return `ip:${ip}`;
 }
+
 
 function rateLimitOk(req: NextRequest) {
   const now = Date.now();
