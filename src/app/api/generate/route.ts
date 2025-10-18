@@ -627,15 +627,21 @@ stitched.days = [...d1, ...d2, ...d3];
     stitched = ensureExactly30(stitched);
 
     const buf = await buildDocx(stitched, data);
-    const fileName = 'QuickPostKit_' + String(Date.now()) + '.docx';
+// buf is a Node Buffer (e.g., from docx Packer)
+const fileName = 'QuickPostKit_' + String(Date.now()) + '.docx';
 
-    return new Response(buf, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'Content-Disposition': 'attachment; filename=' + fileName
-      }
-    });
+// Convert Node Buffer -> ArrayBuffer (correctly slicing the view)
+const arrayBuffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+
+return new Response(arrayBuffer, {
+  status: 200,
+  headers: {
+    'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'Content-Disposition': `attachment; filename="${fileName}"`,
+    'Cache-Control': 'no-store',
+  },
+});
+
   } catch (err: any) {
     const msg = err && err.message ? String(err.message) : 'Unknown error';
     return new Response(JSON.stringify({ error: msg }), {
