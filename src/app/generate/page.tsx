@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { saveQpkForm } from "@/lib/qpkFormPersist";
+import { Suspense } from "react";
 
 type FormValues = {
   schema_version: number;
@@ -72,8 +73,10 @@ export default function GenerateFormPage() {
       setLoading(false);
     }
   }
+import { Suspense } from "react";
 
-  return (
+return (
+  <Suspense fallback={null}>
     <main className="min-h-screen bg-[radial-gradient(1000px_500px_at_80%_-10%,#1a1d2b_0%,#0b0b12_45%)] text-slate-100">
       {/* Top bar (visual only) */}
       <header className="border-b border-white/5 sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-black/30">
@@ -90,6 +93,11 @@ export default function GenerateFormPage() {
           </nav>
         </div>
       </header>
+
+      {/* ...rest of your page content stays here... */}
+    </main>
+  </Suspense>
+);
 
       {/* Intro */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
