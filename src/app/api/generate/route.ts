@@ -630,10 +630,8 @@ stitched.days = [...d1, ...d2, ...d3];
 // buf is a Node Buffer (e.g., from docx Packer)
 const fileName = 'QuickPostKit_' + String(Date.now()) + '.docx';
 
-// Convert Node Buffer -> ArrayBuffer (correctly slicing the view)
-const arrayBuffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
-
-return new Response(arrayBuffer, {
+// Return a Uint8Array (Buffer extends Uint8Array, but we wrap to satisfy TS)
+return new Response(new Uint8Array(buf), {
   status: 200,
   headers: {
     'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -641,6 +639,7 @@ return new Response(arrayBuffer, {
     'Cache-Control': 'no-store',
   },
 });
+
 
   } catch (err: any) {
     const msg = err && err.message ? String(err.message) : 'Unknown error';
