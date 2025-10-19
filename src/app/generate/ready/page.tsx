@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { loadQpkForm } from "@/lib/qpkFormPersist";
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 import { Suspense } from "react";
 
