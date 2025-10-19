@@ -98,7 +98,7 @@ return (
     </main>
   </Suspense>
 );
-
+}
       {/* Intro */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
         <h1 className="text-3xl sm:text-4xl font-semibold text-white">Generate Your 30-Day Social Content Kit</h1>
@@ -302,7 +302,6 @@ return (
         </div>
       </section>
 
-      {/* Overlay: add third line (UI-only) */}
       {loading && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/70 text-white space-y-2">
           <p className="text-lg font-semibold">Preparing your content pack...</p>
@@ -311,5 +310,6 @@ return (
         </div>
       )}
     </main>
-  );
+  </Suspense>
+);
 }
