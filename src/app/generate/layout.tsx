@@ -1,12 +1,11 @@
-﻿"use client";
+﻿// src/app/generate/layout.tsx
+import React from "react";
 
-import PostCheckoutRunner from "@/components/PostCheckoutRunner";
-
-export default function GenerateLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      {children}
-      <PostCheckoutRunner />
-    </>
-  );
+export default function GenerateLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  // Must render children or the page will be blank
+  return <main className="min-h-screen">{children}</main>;
 }
