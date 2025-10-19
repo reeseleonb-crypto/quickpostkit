@@ -3,8 +3,14 @@ export const revalidate = 0;
 
 export default function Page() {
   return (
-    <div style={{ padding: 24, fontSize: 24, color: "#fff", background: "#111" }}>
-      HELLO from /generate (route-only test)
-    </div>
+    <html>
+      <body style={{ background: "#111", color: "#fff", padding: "2rem" }}>
+        <h1>✅ Direct render from /generate</h1>
+        <p>
+          If this appears, your <code>layout.tsx</code> or parent route is preventing content
+          from displaying.
+        </p>
+      </body>
+    </html>
   );
 }
