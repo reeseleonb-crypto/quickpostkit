@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { loadQpkForm } from "@/lib/qpkFormPersist";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+import { Suspense } from "react";
 
 async function fetchAsDocx(url: string, init?: RequestInit) {
   const res = await fetch(url, init);
@@ -68,7 +72,8 @@ export default function ReadyPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
-  return (
+return (
+  <Suspense fallback={null}>
     <main className="min-h-[70vh] flex flex-col items-center justify-center gap-4 p-6 text-center">
       <h1 className="text-2xl font-bold">Preparing your content pack…</h1>
       <p className="text-sm opacity-80">Status: {status}</p>
@@ -81,5 +86,7 @@ export default function ReadyPage() {
         </>
       )}
     </main>
-  );
+  </Suspense>
+);
+
 }
