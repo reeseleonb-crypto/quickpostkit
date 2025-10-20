@@ -1,13 +1,10 @@
 "use client";
 
-import { Suspense } from "react";
-import GenerateForm from "./GenerateForm";
-
 export default function ClientShell() {
-  // Render your full form/UI
   return (
-    <Suspense fallback={null}>
-      <GenerateForm />
-    </Suspense>
+    <main style={{ minHeight: "60vh", padding: 24 }}>
+      <h1>Generate – live page</h1>
+      <p>If you can see this, the route is now rendering ClientShell.</p>
+    </main>
   );
 }

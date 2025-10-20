@@ -1,11 +1,17 @@
-﻿// src/app/generate/layout.tsx
-import React from "react";
+﻿export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default function GenerateLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Must render children or the page will be blank
-  return <main className="min-h-screen">{children}</main>;
+  return (
+    <html lang="en">
+      <body>
+        {/* your header/nav can live here if you want */}
+        {children} {/* ← REQUIRED */}
+      </body>
+    </html>
+  );
 }
