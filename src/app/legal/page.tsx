@@ -5,8 +5,11 @@ export default function Legal() {
         <div className="flex justify-end">
           <a href="/" className="inline-flex items-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:border-white/30">← Back to Home</a>
         </div>
+        <div className="flex justify-end">
+          <a href="/" className="inline-flex items-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:border-white/30">â† Back to Home</a>
+        </div>
   <div className="flex justify-end">
-    <a href="/" className="inline-flex items-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:border-white/30">â† Back to Home</a>
+    <a href="/" className="inline-flex items-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:border-white/30">Ã¢â€ Â Back to Home</a>
   </div>
         <header>
           <h1 className="text-3xl font-bold">Legal &amp; Data Practices</h1>
@@ -45,15 +48,15 @@ export default function Legal() {
           <p className="mt-2 leading-relaxed text-slate-300">
             All payments are processed securely by <span className="font-medium">Stripe</span>. QuickPostKit does not
             see or store your credit-card or banking data. Stripe operates independently and maintains its own security
-            and compliance programs. Your payment information is handled under Stripeâ€™s policies.
+            and compliance programs. Your payment information is handled under StripeÃ¢â‚¬â„¢s policies.
           </p>
         </section>
 
         <section>
           <h2 className="mt-6 text-xl font-semibold">AI Processing (OpenAI / ChatGPT API)</h2>
           <p className="mt-2 leading-relaxed text-slate-300">
-            To assemble your plan, we use <span className="font-medium">OpenAIâ€™s ChatGPT API</span>. Relevant inputs
-            may be transmitted to OpenAI for processing and are subject to OpenAIâ€™s terms and privacy practices.
+            To assemble your plan, we use <span className="font-medium">OpenAIÃ¢â‚¬â„¢s ChatGPT API</span>. Relevant inputs
+            may be transmitted to OpenAI for processing and are subject to OpenAIÃ¢â‚¬â„¢s terms and privacy practices.
             Avoid entering sensitive data. QuickPostKit cannot control how third-party providers process or retain
             data under their policies.
           </p>
@@ -87,7 +90,7 @@ export default function Legal() {
         </section>
 
         <footer className="border-t border-slate-800 pt-4 text-sm text-slate-500">
-          QuickPostKit Â© {new Date().getFullYear()}. A Fifth Element Labs Product.
+          QuickPostKit Ã‚Â© {new Date().getFullYear()}. A Fifth Element Labs Product.
         </footer>
       </div>
     </main>
