@@ -1,7 +1,10 @@
-﻿export default function Legal() {
+export default function Legal() {
   return (
     <main className="min-h-screen bg-[radial-gradient(1000px_500px_at_80%_-10%,#1a1d2b_0%,#0b0b12_45%)] text-slate-100 px-6 py-12">
       <div className="mx-auto max-w-3xl space-y-8">
+  <div className="flex justify-end">
+    <a href="/" className="inline-flex items-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white hover:border-white/30">← Back to Home</a>
+  </div>
         <header>
           <h1 className="text-3xl font-bold">Legal &amp; Data Practices</h1>
           <p className="mt-2 text-sm text-slate-400">Last updated: {new Date().toISOString().slice(0, 10)}</p>
