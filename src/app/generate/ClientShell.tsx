@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 import GenerateForm from "./GenerateForm";
 
 export default function ClientShell() {
   return (
-    <div className="min-h-screen bg-[radial-gradient(1000px_500px_at_80%_-10%,#1a1d2b_0%,#0b0b12_45%)] text-slate-100 selection:bg-fuchsia-500/30">
+    <div className="min-h-screen bg-[#0b0b12] text-slate-100 selection:bg-fuchsia-500/30">
       {/* Nav (same as landing) */}
       <header className="sticky top-0 z-30 border-b border-white/5 backdrop-blur supports-[backdrop-filter]:bg-black/30">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
