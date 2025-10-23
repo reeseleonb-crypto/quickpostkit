@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import GenerateForm from "./GenerateForm";
 
 export default function ClientShell() {
@@ -15,11 +15,12 @@ export default function ClientShell() {
               </span>
             </a>
             <nav className="hidden gap-6 text-sm text-slate-300 md:flex">
-              <a href="/#who" className="hover:text-white">Who its for</a>
-              <a href="/#how" className="hover:text-white">How it works</a>
-              <a href="/sample" className="hover:text-white">Sample</a>
-              <a href="/#faq" className="hover:text-white">FAQ</a>
-            </nav>
+  <a href="/#who" className="hover:text-white">Who its for</a>
+  <a href="/#how" className="hover:text-white">How it works</a>
+  <a href="/sample" className="hover:text-white">Sample</a>
+  <a href="/#faq" className="hover:text-white">FAQ</a>
+  <a href="/legal" className="hover:text-white">Legal & Contact</a>
+</nav>
             <a href="/generate" className="group inline-flex items-center rounded-xl border border-fuchsia-400/40 bg-white/5 px-3 py-1.5 text-sm font-medium text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,.06)] hover:border-fuchsia-400/80 transition">
               <span className="mr-1.5 h-2 w-2 rounded-full bg-fuchsia-400 shadow-[0_0_12px_3px_rgba(255,61,240,.6)] group-hover:scale-110 transition" />
               Get Your Kit
@@ -69,11 +70,12 @@ export default function ClientShell() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 text-sm text-slate-400 flex flex-col items-center justify-between gap-3 sm:flex-row">
           <p>QuickPostKit 2025. A Fifth Element Labs Product.</p>
           <nav className="flex gap-4">
-            <a className="hover:text-slate-200" href="/#who">Who its for</a>
-            <a className="hover:text-slate-200" href="/#how">How it works</a>
-            <a className="hover:text-slate-200" href="/sample">Sample</a>
-            <a className="hover:text-slate-200" href="/#faq">FAQ</a>
-          </nav>
+  <a className="hover:text-slate-200" href="/#who">Who its for</a>
+  <a className="hover:text-slate-200" href="/#how">How it works</a>
+  <a className="hover:text-slate-200" href="/sample">Sample</a>
+  <a className="hover:text-slate-200" href="/#faq">FAQ</a>
+  <a className="hover:text-slate-200" href="/legal">Legal & Contact</a>
+</nav>
         </div>
       </footer>
     </div>
