@@ -85,15 +85,20 @@ export default function GenerateForm() {
     }
   }
 
+  // Dark theme inputs to match site
   const inputCls =
-    "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 outline-none focus:border-slate-500";
-  const labelCls = "text-sm font-medium text-slate-800";
+    "w-full rounded-lg border border-slate-700 bg-slate-900/60 text-slate-100 placeholder:text-slate-400 px-3 py-2 outline-none focus:border-slate-400";
+  const labelCls = "text-sm font-medium text-slate-200";
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
-      <h1 className="text-4xl font-extrabold tracking-tight">Generate Your 30-Day Social Content Kit</h1>
-      <p className="text-slate-600 mt-2 mb-8">
-        Fill in the details below. When you click <span className="font-semibold">Generate</span>, your DOCX will download automatically.
+    <div className="max-w-4xl mx-auto px-6 py-10 text-slate-100">
+      <h1 className="text-4xl font-extrabold tracking-tight">
+        <span className="bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 to-sky-400">
+          Generate Your 30-Day Social Content Kit
+        </span>
+      </h1>
+      <p className="text-slate-400 mt-2 mb-8">
+        Fill in the details below. When you click <span className="font-semibold text-slate-200">Generate</span>, your DOCX will download automatically.
       </p>
 
       <form onSubmit={onSubmit} className="grid gap-6">
@@ -147,8 +152,16 @@ export default function GenerateForm() {
 
           <div className="grid gap-2 md:col-span-2">
             <label className={labelCls}>Content Balance</label>
-            <input type="range" min={0} max={100} step={1} value={f.content_balance} onChange={(e) => up("content_balance", Number(e.target.value))} className="w-full" />
-            <div className="text-xs text-slate-600">
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={f.content_balance}
+              onChange={(e) => up("content_balance", Number(e.target.value))}
+              className="w-full accent-sky-400"
+            />
+            <div className="text-xs text-slate-400">
               {f.content_balance}% entertaining / {100 - f.content_balance}% educational
               <span className="opacity-70"> (backend receives % educational)</span>
             </div>
@@ -170,13 +183,13 @@ export default function GenerateForm() {
           </div>
         </div>
 
-        {err && <div className="text-sm text-red-700">{err}</div>}
+        {err && <div className="text-sm text-red-400">{err}</div>}
 
         <div className="pt-2">
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center justify-center rounded-lg border border-slate-800 bg-black px-5 py-2.5 font-semibold text-white hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-lg border border-fuchsia-500/40 bg-gradient-to-r from-fuchsia-500 to-sky-500 px-5 py-2.5 font-semibold text-white shadow hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? "Generating..." : "Generate"}
           </button>
