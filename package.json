@@ -3,17 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
     "docx": "^9.5.1",
-    "next": "15.5.2",
     "openai": "^5.19.1",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
     "stripe": "^18.5.0",
     "zod": "^3.25.76"
   },
@@ -22,13 +19,18 @@
     "@babel/core": "^7.28.4",
     "@babel/plugin-transform-template-literals": "^7.27.1",
     "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.1.16",
     "@types/node": "^20.19.13",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.21",
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
-    "tailwindcss": "^4",
+    "next": "^15.5.2",
+    "postcss": "^8.5.6",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "3.4.x",
     "typescript": "^5"
   }
 }

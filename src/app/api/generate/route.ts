@@ -1,4 +1,4 @@
-﻿import OpenAI from 'openai';
+import OpenAI from 'openai';
 import { Document, Packer, Paragraph, HeadingLevel, Footer, AlignmentType } from 'docx';
 
 export const runtime = 'nodejs';
@@ -55,7 +55,7 @@ function buildPrompt(data: Inputs): string {
   lines.push('Use double quotes for all keys and strings. No trailing commas. ASCII only.');
   lines.push('TOP LEVEL: include a property named "days" that is an array with exactly 30 items.');
   lines.push('PER-DAY KEYS (exact): "hook", "caption", "video_idea", "filming_directions", "editing_notes", "cta", "hashtags", "posting_suggestion", "platform_notes".');
-  lines.push('FILMING_DIRECTIONS: array of 5-7 beginner steps. Each has: "start_s" (int), "end_s" (int), "instruction" (plain filming guidance for non-experts), "overlay" (<= 6 words, Title Case). Hook visible by 0-2s. Timestamps ascend. Total 12-20s.');
+  lines.push('FILMING_DIRECTIONS: array of 5-7 steps showing how to **film the creator performing their craft** so it looks impressive and shareable on social media â€” never how to perform the craft itself. Each step uses action words like "capture", "show", "highlight", "film", "reveal".start_s" (int), "end_s" (int), "instruction" (plain filming guidance for non-experts), "overlay" (<= 6 words, Title Case). Hook visible by 0-2s. Timestamps ascend. Total 12-20s.');
   lines.push('EDITING_NOTES: array of 3-5 varied, specific techniques matched to the idea.');
   lines.push('HASHTAGS: array of 4-6 all-lowercase, niche-aware; avoid generic fillers.');
   lines.push('CTA: fresh and specific; avoid generic lines.');
@@ -78,7 +78,15 @@ function buildPrompt(data: Inputs): string {
   lines.push('Location: ' + (data.location ?? '') + '.');
   lines.push('Special instructions: ' + (data.special_instructions ?? '') + '.');
 
-  lines.push('QUALITY GUARDRAILS: No cliches, no repetitive phrasing, no filler. Hooks must be punchy and varied. Keep captions human and specific. Return JSON only.');
+  lines.push(`CREATIVE CONTEXT:
+This project is for local creators and small businesses who want to show their craft through short social media videos.
+Filming directions must focus on how to *film the craft being performed*, not how to perform it.
+Describe how to capture emotion, movement, lighting, and storytelling that makes the work look cinematic and worth watching.
+Never give tutorial advice or instructions about the technical performance of the craft (like how to weld, paint, or photograph).
+Give short, visual filming ideas that highlight results, reactions, and human connection.
+If the user is a wedding photographer, describe filming key moments (first dance, first kiss, guests reacting) instead of camera settings.
+If the user mows lawns, describe showing transformations, textures, and results, not mowing technique.
+QUALITY GUARDRAILS: No cliches, no repetitive phrasing, no filler. Hooks must be punchy and varied. Keep captions human and specific. Return JSON only.`);
   return lines.join('\n');
 }
 
@@ -475,7 +483,7 @@ function buildComfortNote(data: Inputs): string {
   if (comfort === 'talking_head') {
     return [
       'COMFORT MODE: TALKING_HEAD.',
-      'Include 1â€“2 short Say: style lines and at least one head-and-shoulders framing note.'
+      'Include 1Ã¢â‚¬â€œ2 short Say: style lines and at least one head-and-shoulders framing note.'
     ].join('\\n');
   }
 
@@ -574,16 +582,15 @@ async function regenerateOneDay(client: OpenAI, data: Inputs, dayNumber: number)
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(function(){ return {}; });
-    const data: Inputs = body || {};
+    const { ok, data } = validateInputs(await req.json().catch(()=>({})));
     const comfort = String((data as any).video_comfort || '').toLowerCase().trim();
 
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     // 3 x 10 batches to avoid tail truncation
-    const batch1 = await generateBatch(client, data, 0, 10);
-    const batch2 = await generateBatch(client, data, 10, 10);
-    const batch3 = await generateBatch(client, data, 20, 10);
+    const batch1 = await generateBatch(client, data || {}, 0, 10);
+    const batch2 = await generateBatch(client, data || {}, 10, 10);
+    const batch3 = await generateBatch(client, data || {}, 20, 10);
 
     // Stitch
 // types must exist somewhere above:
@@ -605,13 +612,13 @@ stitched.days = [...d1, ...d2, ...d3];
     // Pad/truncate to exactly 30
     stitched = ensureExactly30(stitched);
 
-    // Targeted regeneration for any low-quality days (comfort-aware; focus on 21â€“30 first)
+    // Targeted regeneration for any low-quality days (comfort-aware; focus on 21Ã¢â‚¬â€œ30 first)
     for (let i = 20; i < 30; i++) {
       const dayNumber = i + 1;
       let d = stitched.days[i];
       if (isLowQualityDay(d, dayNumber, comfort)) {
         for (let attempt = 0; attempt < 2; attempt++) {
-          const fresh = await regenerateOneDay(client, data, dayNumber);
+          const fresh = await regenerateOneDay(client, data || {}, dayNumber);
           if (fresh) {
             const clean = sanitizeFilmingSteps(fresh, comfort);
             if (!isLowQualityDay(clean, dayNumber, comfort)) {
@@ -649,3 +656,8 @@ return new Response(new Uint8Array(buf), {
     });
   }
 }
+
+
+
+
+

@@ -31,24 +31,6 @@ const DEFAULT_FORM: Form = {
   special_instructions: "",
 };
 
-
-
-// --- QPK: persist form across Stripe redirects ---
-const QPK_FORM_KEY = "qpk.form.v1";
-const loadForm = (): Form | null => {
-  try {
-    const s = typeof window !== "undefined" ? window.localStorage.getItem(QPK_FORM_KEY) : null;
-    return s ? (JSON.parse(s) as Form) : null;
-  } catch { return null; }
-};
-const saveForm = (f: Form) => {
-  try { if (typeof window !== "undefined") window.localStorage.setItem(QPK_FORM_KEY, JSON.stringify(f)); } catch {}
-};
-const clearForm = () => {
-  try { if (typeof window !== "undefined") window.localStorage.removeItem(QPK_FORM_KEY); } catch {}
-};
-// --- end QPK helpers ---
-
 const PLATFORMS = ["Instagram", "TikTok", "Facebook", "LinkedIn", "YouTube"];
 const VIDEO_COMFORT = ["Camera shy", "Somewhat comfortable", "Confident on camera"];
 const HASHTAG_STYLES = [
@@ -58,13 +40,7 @@ const HASHTAG_STYLES = [
 ];
 
 export default function ClientShell() {
-  // Restore saved form on mount
-  useEffect(() => {
-    const saved = loadForm();
-    if (saved) setForm(saved);
-  }, []);
-
-const sp = useSearchParams();
+  const sp = useSearchParams();
   const sessionId = sp.get("session_id");
 
   const [form, setForm] = useState<Form>(DEFAULT_FORM);
@@ -96,8 +72,7 @@ const sp = useSearchParams();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
-  const onChange = (k: keyof Form, v: any) =>
-  setForm(prev => { const next = { ...prev, [k]: v }; saveForm(next); return next; });
+  const onChange = (k: keyof Form, v: any) => setForm((prev) => ({ ...prev, [k]: v }));
 
   const disabled = useMemo(() => {
     return !form.niche || !form.audience || !form.product_or_service || !form.primary_platform;
@@ -138,8 +113,7 @@ const sp = useSearchParams();
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-clearForm();
-setTimeout(() => setBusy(null), 1500);
+      setTimeout(() => setBusy(null), 1500);
     } catch (e: any) {
       setBusy(null);
       setError(e?.message || "Generation error");
@@ -154,7 +128,7 @@ setTimeout(() => setBusy(null), 1500);
             <h1 className="text-3xl md:text-4xl font-semibold text-white">Generate Your 30-Day Social Content Kit</h1>
             <p className="mt-2 text-sm text-slate-300">
               Fill in the details below. When you click <b>Generate</b>, your DOCX will download automatically.
-              <span className="ml-2">No subscriptions, no logins Ã¢â‚¬â€ just one-time $5.</span>
+              <span className="ml-2">No subscriptions, no logins â€” just one-time $5.</span>
             </p>
           </div>
 
@@ -162,7 +136,7 @@ setTimeout(() => setBusy(null), 1500);
             <div>
               <label className="block text-sm font-medium text-slate-200 mb-1">Niche</label>
               <input
-                className="w-full rounded-xl bg-slate-800 border border-slate-600 px-4 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-400"
+                className="w-full rounded-xl bg-white/10 border border-white/15 px-4 py-2 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-400"
                 placeholder="e.g., power washing"
                 value={form.niche}
                 onChange={(e) => onChange("niche", e.target.value)}
@@ -171,7 +145,7 @@ setTimeout(() => setBusy(null), 1500);
             <div>
               <label className="block text-sm font-medium text-slate-200 mb-1">Audience</label>
               <input
-                className="w-full rounded-xl bg-slate-800 border border-slate-600 px-4 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-400"
+                className="w-full rounded-xl bg-white/10 border border-white/15 px-4 py-2 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-400"
                 placeholder="e.g., homeowners"
                 value={form.audience}
                 onChange={(e) => onChange("audience", e.target.value)}
@@ -180,7 +154,7 @@ setTimeout(() => setBusy(null), 1500);
             <div>
               <label className="block text-sm font-medium text-slate-200 mb-1">Product or Service</label>
               <input
-                className="w-full rounded-xl bg-slate-800 border border-slate-600 px-4 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-400"
+                className="w-full rounded-xl bg-white/10 border border-white/15 px-4 py-2 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-400"
                 placeholder="e.g., driveway cleaning"
                 value={form.product_or_service}
                 onChange={(e) => onChange("product_or_service", e.target.value)}
@@ -189,7 +163,7 @@ setTimeout(() => setBusy(null), 1500);
             <div>
               <label className="block text-sm font-medium text-slate-200 mb-1">Primary Platform</label>
               <select
-                className="w-full rounded-xl bg-slate-800 border border-slate-600 px-4 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 appearance-none pr-9"
+                className="w-full rounded-xl bg-white/10 border border-white/15 px-4 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 appearance-none pr-9"
                 value={form.primary_platform}
                 onChange={(e) => onChange("primary_platform", e.target.value)}
               >
@@ -204,7 +178,7 @@ setTimeout(() => setBusy(null), 1500);
             <div>
               <label className="block text-sm font-medium text-slate-200 mb-1">Tone</label>
               <input
-                className="w-full rounded-xl bg-slate-800 border border-slate-600 px-4 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-400"
+                className="w-full rounded-xl bg-white/10 border border-white/15 px-4 py-2 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-400"
                 placeholder="e.g., witty, direct, professional"
                 value={form.tone}
                 onChange={(e) => onChange("tone", e.target.value)}
@@ -213,7 +187,7 @@ setTimeout(() => setBusy(null), 1500);
             <div>
               <label className="block text-sm font-medium text-slate-200 mb-1">Video Comfort</label>
               <select
-                className="w-full rounded-xl bg-slate-800 border border-slate-600 px-4 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 appearance-none pr-9"
+                className="w-full rounded-xl bg-white/10 border border-white/15 px-4 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 appearance-none pr-9"
                 value={form.video_comfort}
                 onChange={(e) => onChange("video_comfort", e.target.value)}
               >
@@ -228,7 +202,7 @@ setTimeout(() => setBusy(null), 1500);
             <div>
               <label className="block text-sm font-medium text-slate-200 mb-1">Monthly Goal</label>
               <input
-                className="w-full rounded-xl bg-slate-800 border border-slate-600 px-4 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-400"
+                className="w-full rounded-xl bg-white/10 border border-white/15 px-4 py-2 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-400"
                 placeholder="e.g., bookings, sales, email signups"
                 value={form.monthly_goal}
                 onChange={(e) => onChange("monthly_goal", e.target.value)}
@@ -236,7 +210,7 @@ setTimeout(() => setBusy(null), 1500);
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-200 mb-1">
-                Content Balance <span className="text-slate-400">(Education vs Fun)</span>
+                Content Balance <span className="text-slate-400">(education vs promo)</span>
               </label>
               <input
                 type="range"
@@ -247,12 +221,12 @@ setTimeout(() => setBusy(null), 1500);
                 value={form.content_balance}
                 onChange={(e) => onChange("content_balance", Number(e.target.value))}
               />
-              <div className="mt-1 text-sm text-slate-400">{`Education: ${form.content_balance} | Fun: ${100 - form.content_balance}`}</div>
+              <div className="mt-1 text-sm text-slate-400">{form.content_balance}% educational</div>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-200 mb-1">Hashtag Style</label>
               <select
-                className="w-full rounded-xl bg-slate-800 border border-slate-600 px-4 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 appearance-none pr-9"
+                className="w-full rounded-xl bg-white/10 border border-white/15 px-4 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 appearance-none pr-9"
                 value={form.hashtag_style}
                 onChange={(e) => onChange("hashtag_style", e.target.value)}
               >
@@ -266,7 +240,7 @@ setTimeout(() => setBusy(null), 1500);
             <div>
               <label className="block text-sm font-medium text-slate-200 mb-1">Location</label>
               <input
-                className="w-full rounded-xl bg-slate-800 border border-slate-600 px-4 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-400"
+                className="w-full rounded-xl bg-white/10 border border-white/15 px-4 py-2 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-400"
                 placeholder="e.g., Wilmington, NC"
                 value={form.location}
                 onChange={(e) => onChange("location", e.target.value)}
@@ -306,7 +280,6 @@ setTimeout(() => setBusy(null), 1500);
             <a href="/" className="text-slate-200 hover:text-white underline underline-offset-4">
               Back to Home
             </a>
-<a href="/legal" className="text-slate-200 hover:text-white underline underline-offset-4 ml-0 md:ml-4 block md:inline">Legal / Contact</a>
           </div>
 
           <p className="mt-3 text-sm text-slate-300">
@@ -334,13 +307,4 @@ setTimeout(() => setBusy(null), 1500);
     </main>
   );
 }
-
-
-
-
-
-
-
-
-
 
